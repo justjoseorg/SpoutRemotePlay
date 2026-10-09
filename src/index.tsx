@@ -731,8 +731,8 @@ function SpoutIcon() {
 
 const sessionEvent = callable<[state: string], unknown>("session_event");
 
-// Tell paired hosts when this device starts/stops a Remote Play stream so they
-// can create/remove the virtual monitor.
+// Tell the paired PC this device streams from when a Remote Play stream starts/stops,
+// so only that PC switches its displays.
 function watchRemotePlay(): () => void {
   const rp = (window as any).SteamClient?.RemotePlay;
   const subs = [

@@ -53,7 +53,7 @@ On Windows, Steam's client beta now creates that virtual display itself, so the 
 |---|---|
 | 1️⃣ **Wake the PC** | Open the plugin, tap your PC, and it sends Wake-on-LAN and waits until it's up. |
 | 2️⃣ **Pair once** | Enter the PC's IP, type the 4-digit PIN shown on the PC, and you're done. The plugin also learns the PC's MAC address and tells the host what your device can decode (HEVC/AV1) and its screen size. |
-| 3️⃣ **Press play in Steam** | As usual. The plugin notices Steam's Remote Play session and tells the host. On Windows, Steam creates a virtual display for your device and the host turns your other displays off; on Linux, the host creates the virtual display with your device's resolution and refresh rate. When you quit, everything goes back. |
+| 3️⃣ **Press play in Steam** | As usual. The plugin notices Steam's Remote Play session and tells the PC you're streaming from (and only that one). On Windows, Steam creates a virtual display for your device and the host turns your other displays off; on Linux, the host creates the virtual display with your device's resolution and refresh rate. When you quit, everything goes back. |
 
 The plugin is one half of a pair. The other half is the **[host app on your PC](https://github.com/justjoseorg/SpoutRemotePlayHost)** (Windows and Linux, x86_64).
 
