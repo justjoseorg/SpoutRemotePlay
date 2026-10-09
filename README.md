@@ -9,6 +9,8 @@ Decky Loader plugin for Steam Remote Play / native game streaming from a Steam D
 
 - Per-host stream settings (virtual monitor resolution/refresh, codec preference hint) are pushed to the host app's API (port 47995) using the API token you paste in when adding the PC. Tested only against a fake host API; the codec setting is a hint because Steam picks the real codec.
 
+Architecture: no native code, so it runs on both ARM and x86 SteamOS devices.
+
 ## Layout
 
 - `main.py` – backend (host storage, WoL, status probe)
