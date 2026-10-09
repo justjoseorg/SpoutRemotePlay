@@ -79,12 +79,12 @@ class Plugin:
         online = await asyncio.to_thread(wait_until_online, host["address"], PROBE_PORTS, 90)
         return {"ok": True, "online": online}
 
-    def _host_request(self, host: dict, method: str, body: dict | None = None) -> dict:
+    def _host_request(self, host: dict, method: str, body: dict | None = None, path: str = "/api/config") -> dict:
         if not host.get("address"):
             raise ValueError("Set the PC's IP address first")
         data = json.dumps(body).encode() if body is not None else None
         req = urllib.request.Request(
-            f"http://{host['address']}:{HOST_API_PORT}/api/config", data=data, method=method)
+            f"http://{host['address']}:{HOST_API_PORT}{path}", data=data, method=method)
         if host.get("token"):
             req.add_header("Authorization", f"Bearer {host['token']}")
         try:
@@ -105,6 +105,16 @@ class Plugin:
             return {"ok": False, "error": "Unknown host"}
         try:
             return {"ok": True, "settings": await asyncio.to_thread(self._host_request, host, "GET")}
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+
+    async def list_host_apps(self, host_id: str) -> dict:
+        host = next((h for h in self._load() if h["id"] == host_id), None)
+        if not host:
+            return {"ok": False, "error": "Unknown host"}
+        try:
+            res = await asyncio.to_thread(self._host_request, host, "GET", None, "/api/apps")
+            return {"ok": True, "apps": res.get("apps", []), "steam": res.get("steam", {})}
         except ValueError as e:
             return {"ok": False, "error": str(e)}
 

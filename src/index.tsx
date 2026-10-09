@@ -474,10 +474,61 @@ function PairPC({
   );
 }
 
-type TabId = "pcs" | "pair" | "advanced";
+interface HostApp {
+  id: string;
+  name: string;
+  inSteam: boolean;
+}
+const listHostApps = callable<
+  [host_id: string],
+  { ok: boolean; error?: string; apps?: HostApp[]; steam?: { ready: boolean } }
+>("list_host_apps");
+
+// Lists the apps a host has added to its Steam library. They stream from the
+// host's own library, so syncing just refreshes this list.
+function HostApps({ host }: { host: Host }) {
+  const [apps, setApps] = useState<HostApp[] | null>(null);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const sync = async () => {
+    setBusy(true);
+    setMsg("");
+    const r = await listHostApps(host.id);
+    setBusy(false);
+    if (!r.ok) {
+      setMsg(r.error ?? "Failed");
+      return;
+    }
+    setApps(r.apps ?? []);
+    if (r.steam && !r.steam.ready) setMsg("Host Steam integration is not ready");
+  };
+  useEffect(() => {
+    sync();
+  }, []);
+  return (
+    <PanelSection title={host.name}>
+      <PanelSectionRow>
+        <ButtonItem layout="below" disabled={busy} onClick={sync}>
+          {busy ? "Syncing…" : "Sync apps"}
+        </ButtonItem>
+      </PanelSectionRow>
+      {apps?.length === 0 && <PanelSectionRow>No apps on this PC yet.</PanelSectionRow>}
+      {apps?.map((a) => (
+        <PanelSectionRow key={a.id}>
+          {a.name}
+          {a.inSteam ? "" : " (not in Steam)"}
+        </PanelSectionRow>
+      ))}
+      {msg && <PanelSectionRow>{msg}</PanelSectionRow>}
+    </PanelSection>
+  );
+}
+
+type TabId = "pcs" | "pair" | "apps" | "advanced";
 const TABS: { id: TabId; label: string }[] = [
   { id: "pcs", label: "PCs" },
   { id: "pair", label: "Pair" },
+  { id: "apps", label: "Apps" },
   { id: "advanced", label: "Advanced" },
 ];
 
@@ -618,6 +669,18 @@ function Content() {
             )}
           </PairPC>
         </PanelSection>
+      )}
+      {tab === "apps" && (
+        <>
+          {hosts.length === 0 && (
+            <PanelSection>
+              <PanelSectionRow>Pair a PC first.</PanelSectionRow>
+            </PanelSection>
+          )}
+          {hosts.map((h) => (
+            <HostApps key={h.id} host={h} />
+          ))}
+        </>
       )}
       {tab === "advanced" && (
         <>
