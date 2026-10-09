@@ -14,13 +14,13 @@ The plugin is one half of a pair. The other half is the host app on your PC: <ht
 
 - **Wake-on-LAN** with an online check. Not yet run on the Portal.
 - **Apps tab** lists the programs the host added to its Steam library (read-only, via the paired token). Untested on the Portal.
-- **Pairing** with a PIN, and **per-device stream settings** (resolution, refresh, codec hint) pushed to the host. Verified end to end against the real host on Linux.
+- **Pairing** with a PIN, and **per-device stream settings** (resolution, refresh) pushed to the host. Verified end to end against the real host on Linux.
 - **Session signal:** the plugin reports Remote Play start/stop to your paired PCs. Verified on an AYN Odin 2 Portal streaming Celeste to a Linux PC: the host received both the start and the stop.
 - **Network scan** to find the PC, **Steam client decoder toggles** (HEVC/AV1), tabbed UI with L1/R1 switching and a Spout icon. These ran on the device earlier, but the latest UI changes have not been visually confirmed.
 
 Not done yet: confirming the virtual monitor appears automatically on a real stream (the host driver is still being tested), and anything on Windows. If you have several paired PCs, the start/stop signal goes to all of them for now.
 
-Codec is a hint: Steam picks the real codec during negotiation.
+There is no codec setting: Steam picks the codec during negotiation.
 
 Architecture: no native code, so it runs on both ARM and x86 SteamOS devices.
 
