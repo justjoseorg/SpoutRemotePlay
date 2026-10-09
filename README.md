@@ -22,7 +22,9 @@
   <a href="https://github.com/justjoseorg/SpoutRemotePlay/releases/latest"><b>⬇️ Download the plugin</b></a>
   &nbsp;·&nbsp;
   <a href="https://github.com/justjoseorg/SpoutRemotePlayHost/releases/latest"><b>🖥️ Download the PC host</b></a>
-</p>
+    &nbsp;·&nbsp;
+    <a href="CHANGELOG.md">📝 Changelog</a>
+  </p>
 
 ---
 
