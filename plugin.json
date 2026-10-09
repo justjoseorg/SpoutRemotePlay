@@ -5,7 +5,7 @@
   "api_version": 1,
   "publish": {
     "tags": ["streaming", "wake-on-lan", "remote-play"],
-    "description": "A virtual monitor for native Steam Remote Play: wake your PC, pair once, and each stream gets a monitor matching your handheld (needs the SpoutRemotePlayHost app on the PC).",
+    "description": "Companion for native Steam Remote Play: wake your PC, pair once, and while you stream the game stays on a virtual display matching your handheld with your PC's other displays off (needs the SpoutRemotePlayHost app on the PC).",
     "image": "https://raw.githubusercontent.com/justjoseorg/SpoutRemotePlay/main/assets/logo.png"
   }
 }
