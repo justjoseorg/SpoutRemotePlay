@@ -7,6 +7,7 @@ import hashlib
 import os
 import secrets
 import socket
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -20,6 +21,8 @@ from wol import is_port_open, normalize_mac, send_magic_packet, wait_until_onlin
 PROBE_PORTS = (27036, 3389, 445)
 HOST_API_PORT = 47995
 SETTINGS_FILE = os.path.join(decky.DECKY_PLUGIN_SETTINGS_DIR, "hosts.json")
+STREAMING_LOG = "/tmp/streaming_client.log"
+STREAM_TARGET_TRIES = 10
 
 
 class Plugin:
@@ -301,14 +304,71 @@ class Plugin:
             decky.logger.warning(f"session {state} to {host['name']} failed: {e}")
             return False
 
+    def _stream_target(self, since: float) -> str | None:
+        """IP of the PC this device is streaming from, read from the running streaming_client
+        (its --server argument) or, failing that, from the client's log if written after since."""
+        for cmdline in glob.glob("/proc/[0-9]*/cmdline"):
+            try:
+                args = open(cmdline, "rb").read().split(b"\0")
+            except OSError:
+                continue
+            if not any(a.endswith(b"streaming_client") for a in args[:3]):
+                continue
+            for i, a in enumerate(args[:-1]):
+                if a == b"--server":
+                    return args[i + 1].decode(errors="replace").rsplit(":", 1)[0]
+        try:
+            if os.path.getmtime(STREAMING_LOG) < since:
+                return None
+            with open(STREAMING_LOG, errors="replace") as f:
+                lines = f.readlines()
+        except OSError:
+            return None
+        for line in reversed(lines):
+            if "Connecting to server at " in line:
+                return line.split("Connecting to server at ", 1)[1].split()[0].rsplit(":", 1)[0]
+        return None
+
+    def _host_for_ip(self, ip: str) -> dict | None:
+        for h in self._load():
+            if not (h.get("token") and h.get("address")):
+                continue
+            if h["address"] == ip:
+                return h
+            try:
+                if socket.gethostbyname(h["address"]) == ip:
+                    return h
+            except OSError:
+                pass
+        return None
+
     async def session_event(self, state: str) -> dict:
+        """Tell only the PC being streamed from. Each host also detects its own sessions from
+        Steam's log, so when the target is unknown nobody is told rather than everyone."""
         if state not in ("start", "stop"):
             return {"ok": False}
-        hosts = [h for h in self._load() if h.get("token") and h.get("address")]
-        results = await asyncio.gather(
-            *(asyncio.to_thread(self._send_session, h, state) for h in hosts))
-        decky.logger.info(f"remote play {state}: notified {sum(results)}/{len(hosts)} hosts")
-        return {"ok": True, "notified": sum(results)}
+        if state == "start":
+            host, since = None, time.time() - 2
+            # The client may still be starting; give it a few seconds to show up.
+            for _ in range(STREAM_TARGET_TRIES):
+                ip = await asyncio.to_thread(self._stream_target, since)
+                host = ip and await asyncio.to_thread(self._host_for_ip, ip)
+                if host:
+                    break
+                await asyncio.sleep(1)
+            if not host:
+                decky.logger.info("remote play start: streamed PC is not a paired host; nobody notified")
+                return {"ok": True, "notified": 0}
+            self._streaming_host = host["id"]
+        else:
+            host_id = getattr(self, "_streaming_host", None)
+            self._streaming_host = None
+            host = next((h for h in self._load() if h["id"] == host_id), None) if host_id else None
+            if not host:
+                return {"ok": True, "notified": 0}
+        ok = await asyncio.to_thread(self._send_session, host, state)
+        decky.logger.info(f"remote play {state}: notified {host['name']}: {ok}")
+        return {"ok": True, "notified": int(ok)}
 
     async def _main(self):
         decky.logger.info("SpoutRemotePlay loaded")
