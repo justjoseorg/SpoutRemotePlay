@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import glob
 import ipaddress
 import json
 import hashlib
@@ -184,6 +185,27 @@ class Plugin:
             f["paired"] = f["address"] in paired
         return {"ok": True, "hosts": sorted(found, key=lambda f: f["address"])}
 
+    async def _capabilities(self) -> dict:
+        caps: dict = {"hevc": False, "av1": False}
+        try:
+            st = await steamcfg.read_state()
+            caps["hevc"] = bool(st.get("hevc_available"))
+            caps["av1"] = bool(st.get("av1_available"))
+        except Exception as e:
+            decky.logger.info(f"capabilities: Steam not reachable ({e})")
+        try:
+            for modes in sorted(glob.glob("/sys/class/drm/card*-*/modes")):
+                status = modes.replace("modes", "status")
+                if os.path.exists(status) and open(status).read().strip() != "connected":
+                    continue
+                first = open(modes).readline().strip().split("x")
+                if len(first) == 2:
+                    caps["width"], caps["height"] = int(first[0]), int(first[1])
+                    break
+        except (OSError, ValueError):
+            pass
+        return caps
+
     async def start_pairing(self, address: str) -> dict:
         """Ask the PC to pair. The PIN is shown here and typed into the host UI on the PC."""
         address = (address or "").strip()
@@ -196,6 +218,7 @@ class Plugin:
             "salt": salt,
             "pinHash": hashlib.sha256((salt + pin).encode()).hexdigest(),
             "secretHash": hashlib.sha256(secret.encode()).hexdigest(),
+            "caps": await self._capabilities(),
         }
         try:
             res = await asyncio.to_thread(self._post_json, address, "/api/pair/request", body)
