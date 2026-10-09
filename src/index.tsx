@@ -4,6 +4,7 @@ import {
   PanelSection,
   PanelSectionRow,
   TextField,
+  ToggleField,
   staticClasses,
 } from "@decky/ui";
 import { callable, definePlugin, toaster } from "@decky/api";
@@ -45,6 +46,20 @@ const setHostSettings = callable<
   [hostId: string, settings: HostSettings],
   { ok: boolean; settings?: HostSettings; error?: string }
 >("set_host_settings");
+type Decoders = { hardware_decoding: boolean; hevc: boolean; av1: boolean; pyrowave: boolean };
+type DecoderState = {
+  ok: boolean;
+  error?: string;
+  enabled?: boolean;
+  decoders?: Decoders;
+  hevc_available?: boolean;
+  av1_available?: boolean;
+  pyrowave_available?: boolean;
+};
+const getDecoders = callable<[], DecoderState>("get_decoders");
+const setDecoders = callable<[values: Partial<Decoders>, enabled: boolean], DecoderState>(
+  "set_decoders"
+);
 const hostStatus = callable<[hostId: string], boolean>("host_status");
 
 const RESOLUTIONS = ["1280x800", "1920x1080", "2560x1440", "3840x2160"];
@@ -55,6 +70,66 @@ const CODECS = [
   { data: "hevc", label: "HEVC" },
   { data: "av1", label: "AV1" },
 ];
+
+function DecoderSettings() {
+  const [st, setSt] = useState<DecoderState | null>(null);
+
+  useEffect(() => {
+    getDecoders().then(setSt);
+  }, []);
+
+  if (!st) return <PanelSectionRow>Loading…</PanelSectionRow>;
+  if (!st.ok || !st.decoders) return <PanelSectionRow>{st.error ?? "Steam not reachable"}</PanelSectionRow>;
+
+  const change = async (values: Partial<Decoders>, enabled = true) => setSt(await setDecoders(values, enabled));
+  const d = st.decoders;
+  return (
+    <>
+      <PanelSectionRow>
+        <ToggleField
+          label="Override client decoder settings"
+          checked={!!st.enabled}
+          onChange={(v) => change({}, v)}
+        />
+      </PanelSectionRow>
+      {st.enabled && (
+        <>
+          <PanelSectionRow>
+            <ToggleField
+              label="Hardware decoding"
+              checked={d.hardware_decoding}
+              onChange={(v) => change({ hardware_decoding: v })}
+            />
+          </PanelSectionRow>
+          <PanelSectionRow>
+            <ToggleField
+              label="HEVC"
+              checked={d.hevc}
+              disabled={!st.hevc_available}
+              onChange={(v) => change({ hevc: v })}
+            />
+          </PanelSectionRow>
+          <PanelSectionRow>
+            <ToggleField
+              label="AV1"
+              checked={d.av1}
+              disabled={!st.av1_available}
+              onChange={(v) => change({ av1: v })}
+            />
+          </PanelSectionRow>
+          <PanelSectionRow>
+            <ToggleField
+              label="PyroWave"
+              checked={d.pyrowave}
+              disabled={!st.pyrowave_available}
+              onChange={(v) => change({ pyrowave: v })}
+            />
+          </PanelSectionRow>
+        </>
+      )}
+    </>
+  );
+}
 
 function StreamSettings({ host }: { host: Host }) {
   const [s, setS] = useState<HostSettings | null>(null);
@@ -206,6 +281,9 @@ function Content() {
             }}
           />
         ))}
+      </PanelSection>
+      <PanelSection title="Client decoders">
+        <DecoderSettings />
       </PanelSection>
       <PanelSection title="Add PC">
         <PanelSectionRow>

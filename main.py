@@ -7,6 +7,7 @@ import uuid
 
 import decky
 
+import steamcfg
 from wol import is_port_open, normalize_mac, send_magic_packet, wait_until_online
 
 # Steam Remote Play / In-Home Streaming listens on 27036 (TCP); RDP and SMB as fallbacks.
@@ -108,6 +109,22 @@ class Plugin:
             return {"ok": True, "settings": saved}
         except ValueError as e:
             return {"ok": False, "error": str(e)}
+
+    async def get_decoders(self) -> dict:
+        try:
+            st = await steamcfg.read_state()
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+        st.pop("_config")
+        return {"ok": True, **st}
+
+    async def set_decoders(self, values: dict, enabled: bool) -> dict:
+        try:
+            st = await steamcfg.apply(values, enabled)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+        st.pop("_config")
+        return {"ok": True, **st}
 
     async def host_status(self, host_id: str) -> bool:
         host = next((h for h in self._load() if h["id"] == host_id), None)
