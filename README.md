@@ -20,3 +20,7 @@ pnpm i && pnpm build   # outputs dist/
 ```
 
 Copy the folder to `~/homebrew/plugins/SpigotRemotePlay` on the device (with `dist/`, `main.py`, `py_modules/`, `plugin.json`, `package.json`).
+
+## Releases
+
+Merging a PR into `main` publishes a release automatically. `MAJOR.MINOR` is set by hand in the `VERSION` file; the patch number is auto-incremented per merge (e.g. `0.1.0`, `0.1.1`, ...). Edit `VERSION` in a PR to start a new minor/major. Add the `no-release` label to a PR to skip releasing.
