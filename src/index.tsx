@@ -47,7 +47,7 @@ const wakeHost = callable<
 >("wake_host");
 const getHostSettings = callable<
   [hostId: string],
-  { ok: boolean; settings?: HostSettings; error?: string }
+  { ok: boolean; settings?: HostSettings; os?: string; error?: string }
 >("get_host_settings");
 const setHostSettings = callable<
   [hostId: string, settings: HostSettings],
@@ -172,16 +172,31 @@ function DecoderSettings() {
 function StreamSettings({ host }: { host: Host }) {
   const [s, setS] = useState<HostSettings | null>(null);
   const [msg, setMsg] = useState("");
+  const [hostOs, setHostOs] = useState("");
   const [customRes, setCustomRes] = useState("");
   const [customHz, setCustomHz] = useState("");
 
   useEffect(() => {
-    getHostSettings(host.id).then((r) =>
-      r.ok ? setS(r.settings!) : setMsg(r.error ?? "Failed"),
-    );
+    getHostSettings(host.id).then((r) => {
+      if (r.ok) {
+        setS(r.settings!);
+        setHostOs(r.os ?? "");
+      } else {
+        setMsg(r.error ?? "Failed");
+      }
+    });
   }, [host.id]);
 
   if (!s) return <PanelSectionRow>{msg || "Loading…"}</PanelSectionRow>;
+
+  // Steam sizes its own virtual display on Windows, so these settings do nothing there.
+  if (hostOs === "windows") {
+    return (
+      <PanelSectionRow>
+        Steam sets the stream resolution and refresh rate on Windows hosts.
+      </PanelSectionRow>
+    );
+  }
 
   const res = `${s.width}x${s.height}`;
   const resOptions = RESOLUTIONS.includes(res)

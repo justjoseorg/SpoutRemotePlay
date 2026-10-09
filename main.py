@@ -104,9 +104,15 @@ class Plugin:
         if not host:
             return {"ok": False, "error": "Unknown host"}
         try:
-            return {"ok": True, "settings": await asyncio.to_thread(self._host_request, host, "GET")}
+            settings = await asyncio.to_thread(self._host_request, host, "GET")
         except ValueError as e:
             return {"ok": False, "error": str(e)}
+        try:
+            info = await asyncio.to_thread(self._host_request, host, "GET", None, "/api/discover")
+            host_os = info.get("os", "")
+        except ValueError:
+            host_os = ""  # older hosts do not report it
+        return {"ok": True, "settings": settings, "os": host_os}
 
     async def list_host_apps(self, host_id: str) -> dict:
         host = next((h for h in self._load() if h["id"] == host_id), None)
