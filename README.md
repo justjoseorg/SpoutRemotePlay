@@ -34,13 +34,6 @@ This project is based on the ideas and work of others, and I'm grateful to them:
 
 SpoutRemotePlay is an independent project and is not affiliated with any of them or with Valve.
 
-## Layout
-
-- `main.py` – backend (host storage, WoL, pairing, scan, session signal)
-- `py_modules/wol.py` – magic packet and port probe helpers (stdlib only)
-- `py_modules/steamcfg.py` – Steam client decoder settings
-- `src/index.tsx` – Quick Access panel UI
-
 ## Build
 
 ```bash
@@ -48,9 +41,3 @@ pnpm i && pnpm build   # outputs dist/
 ```
 
 Copy the folder to `~/homebrew/plugins/SpoutRemotePlay` on the device (with `dist/`, `main.py`, `py_modules/`, `plugin.json`, `package.json`).
-
-## Releases
-
-Merging a PR into `main` publishes a release automatically. `MAJOR.MINOR` is set by hand in the `VERSION` file; the patch number is auto-incremented per merge (e.g. `0.1.0`, `0.1.1`, ...). Edit `VERSION` in a PR to start a new minor/major. Add the `no-release` label to a PR to skip releasing.
-
-See Releases for installable builds.
