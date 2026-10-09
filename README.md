@@ -41,8 +41,9 @@
 
 This is deliberately *not* another streaming stack. Steam's native Remote Play already streams well, and I want to keep using it as-is: same Steam UI, same Steam Link experience, no separate client to learn.
 
-The one thing it lacks is a **virtual monitor** that matches the handheld, so your PC's real displays aren't hijacked. Tools like ArtMoon/ArtLight (built on Moonlight) solve that for their own streaming protocol. SpoutRemotePlay brings just that piece to **native Steam Remote Play**, as an integrated part of Steam rather than a replacement for it (the Spout in the name is a play on Valve).
+The one thing it lacks is a **virtual monitor** that matches the handheld, so your PC's real displays aren't hijacked. Tools like ArtMoon/ArtLight (built on Moonlight) solve that for their own streaming protocol. SpoutRemotePlay brings just that piece to **native Steam Remote Play**, as an integrated part of Steam rather than a replacement for it.
 
+> **Why "Spout"?** It's a play on **Valve**: a valve controls the flow of steam, and a spout is where the steam comes out. Valve's Steam does the streaming; Spout just gives the stream somewhere to pour, a virtual monitor shaped for your handheld.
 ## 🚀 How it works
 
 | Step | |
