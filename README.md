@@ -1,12 +1,12 @@
 # SpoutRemotePlay (Decky plugin)
 
-**The idea: pick up your handheld, press play on a game from your PC, and go.** No fiddling with resolutions, no dragging windows between monitors, no remembering to wake the PC first.
+**The idea: pick up your handheld, press play on a game from your PC, and go.**
 
-Steam's native Remote Play already streams well. What it lacks is the plumbing around it. Tools like ArtMoon/ArtLight (built on Moonlight) solve that: they wake the PC, create a virtual monitor sized to your handheld, and clean it up afterwards. SpoutRemotePlay brings the same experience to **native Steam Remote Play** (the Spout in the name is a play on Valve):
+This is deliberately *not* another streaming stack. Steam's native Remote Play already streams well, and I want to keep using it as-is: same Steam UI, same Steam Link experience, no separate client to learn. The one thing it lacks is a **virtual monitor** that matches the handheld, so your PC's real displays aren't hijacked. Tools like ArtMoon/ArtLight (built on Moonlight) solve that for their own streaming protocol. SpoutRemotePlay brings just that piece to **native Steam Remote Play**, as an integrated part of Steam rather than a replacement for it (the Spout in the name is a play on Valve):
 
 1. **Wake the PC.** Open the plugin, tap your PC, and it sends Wake-on-LAN and waits until it's up.
 2. **Pair once.** Enter the PC's IP, type the 4-digit PIN shown on the PC, and you're done. The plugin also learns the PC's MAC address and tells the host what your device can decode (HEVC/AV1) and its screen size.
-3. **Press play.** When Steam Remote Play starts, the plugin tells the host. The host creates a virtual monitor with your device's resolution, refresh rate and codec, so your physical displays are left alone. When you quit, it goes away.
+3. **Press play in Steam, as usual.** The plugin notices Steam's Remote Play session and tells the host, which creates a virtual monitor with your device's resolution and refresh rate. When you quit, it goes away.
 
 The plugin is one half of a pair. The other half is the host app on your PC: <https://github.com/justjoseorg/SpoutRemotePlayHost> (Windows and Linux, x86_64).
 
