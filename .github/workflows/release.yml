@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.labels.*.name, 'no-release')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Compute next version
+        id: ver
+        env:
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          latest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)
+          latest=${latest:-v0.0.0}
+          IFS=. read -r major minor patch <<< "${latest#v}"
+          case ",$LABELS," in
+            *,release:major,*) major=$((major+1)); minor=0; patch=0 ;;
+            *,release:patch,*) patch=$((patch+1)) ;;
+            *) minor=$((minor+1)); patch=0 ;;
+          esac
+          echo "version=$major.$minor.$patch" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Build
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          pnpm pkg set version="$VERSION"
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Package
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          mkdir -p out/SpigotRemotePlay
+          cp -r dist py_modules main.py plugin.json package.json LICENSE out/SpigotRemotePlay/
+          (cd out && zip -qr "../SpigotRemotePlay-v${VERSION}.zip" SpigotRemotePlay)
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          gh release create "v${VERSION}" "SpigotRemotePlay-v${VERSION}.zip" \
+            --target "${{ github.event.pull_request.merge_commit_sha }}" \
+            --title "v${VERSION}" \
+            --notes "${{ github.event.pull_request.title }} (#${{ github.event.pull_request.number }})"
