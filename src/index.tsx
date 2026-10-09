@@ -27,7 +27,6 @@ interface HostSettings {
   height: number;
   refreshHz: number;
   autoCreate: boolean;
-  codec: string;
 }
 
 const getHosts = callable<[], Host[]>("get_hosts");
@@ -105,12 +104,6 @@ const RESOLUTIONS = [
   "3840x2160",
 ];
 const REFRESH = [30, 60, 90, 120, 144, 165, 240];
-const CODECS = [
-  { data: "auto", label: "Auto" },
-  { data: "h264", label: "H.264" },
-  { data: "hevc", label: "HEVC" },
-  { data: "av1", label: "AV1" },
-];
 
 function DecoderSettings() {
   const [st, setSt] = useState<DecoderState | null>(null);
@@ -251,14 +244,6 @@ function StreamSettings({ host }: { host: Host }) {
         <ButtonItem layout="below" onClick={applyCustom}>
           Apply custom mode
         </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <DropdownItem
-          label="Codec preference (hint; Steam picks)"
-          rgOptions={CODECS}
-          selectedOption={s.codec}
-          onChange={(o) => apply({ ...s, codec: o.data as string })}
-        />
       </PanelSectionRow>
       {msg && <PanelSectionRow>{msg}</PanelSectionRow>}
     </>
