@@ -27,6 +27,11 @@ jobs:
           patch=$(( ${last:+${last##*.} + 1} + 0 ))
           echo "version=${base}.${patch}" >> "$GITHUB_OUTPUT"
 
+      - name: Release notes
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: bash .github/scripts/release-notes.sh "${{ steps.ver.outputs.version }}" "$PR_TITLE" "${{ github.event.pull_request.number }}" > "$RUNNER_TEMP/notes.md"
+
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -59,4 +64,4 @@ jobs:
           gh release create "v${VERSION}" "SpoutRemotePlay-v${VERSION}.zip" \
             --target "${{ github.event.pull_request.merge_commit_sha }}" \
             --title "v${VERSION}" \
-            --notes "${{ github.event.pull_request.title }} (#${{ github.event.pull_request.number }})"
+            --notes-file "$RUNNER_TEMP/notes.md"
