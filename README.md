@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Pick up your handheld, press play on a game from your PC, and go.</b><br>
-  A Decky plugin that gives Steam's native Remote Play a virtual monitor matching your handheld.
+  A Decky plugin for Steam's native Remote Play: wake your PC, and stream on a virtual display matching your handheld with your other displays off.
 </p>
 
 <p align="center">
@@ -41,16 +41,19 @@
 
 This is deliberately *not* another streaming stack. Steam's native Remote Play already streams well, and I want to keep using it as-is: same Steam UI, same Steam Link experience, no separate client to learn.
 
-The one thing it lacks is a **virtual monitor** that matches the handheld, so your PC's real displays aren't hijacked. Tools like ArtMoon/ArtLight (built on Moonlight) solve that for their own streaming protocol. SpoutRemotePlay brings just that piece to **native Steam Remote Play**, as an integrated part of Steam rather than a replacement for it.
+The one thing it lacks is keeping the stream off your desk: your PC's real displays get hijacked or stay lit while you play on the handheld. Tools like ArtMoon/ArtLight (built on Moonlight) solve that for their own streaming protocol. SpoutRemotePlay brings that piece to **native Steam Remote Play**, as an integrated part of Steam rather than a replacement for it: wake the PC from the handheld, and while you stream, the game runs on a virtual display matching your handheld with your other displays off.
 
-> **Why "Spout"?** It's a play on **Valve**: a valve controls the flow of steam, and a spout is where the steam comes out. Valve's Steam does the streaming; Spout just gives the stream somewhere to pour, a virtual monitor shaped for your handheld.
+On Windows, Steam's client beta now creates that virtual display itself, so the host's job there is to switch your other displays off and bring them back afterwards. On Linux, where Steam doesn't, the host creates the display too.
+
+> **Why "Spout"?** It's a play on **Valve**: a valve controls the flow of steam, and a spout is where the steam comes out. Valve's Steam does the streaming; Spout just makes sure the stream pours onto a display shaped for your handheld.
+
 ## 🚀 How it works
 
 | Step | |
 |---|---|
 | 1️⃣ **Wake the PC** | Open the plugin, tap your PC, and it sends Wake-on-LAN and waits until it's up. |
 | 2️⃣ **Pair once** | Enter the PC's IP, type the 4-digit PIN shown on the PC, and you're done. The plugin also learns the PC's MAC address and tells the host what your device can decode (HEVC/AV1) and its screen size. |
-| 3️⃣ **Press play in Steam** | As usual. The plugin notices Steam's Remote Play session and tells the host, which creates a virtual monitor with your device's resolution and refresh rate. When you quit, it goes away. |
+| 3️⃣ **Press play in Steam** | As usual. The plugin notices Steam's Remote Play session and tells the host. On Windows, Steam creates a virtual display for your device and the host turns your other displays off; on Linux, the host creates the virtual display with your device's resolution and refresh rate. When you quit, everything goes back. |
 
 The plugin is one half of a pair. The other half is the **[host app on your PC](https://github.com/justjoseorg/SpoutRemotePlayHost)** (Windows and Linux, x86_64).
 
@@ -69,7 +72,7 @@ Requires [Decky Loader](https://decky.xyz/). No native code, so it runs on both 
 |---|---|
 | 🔐 **Pairing** with a PIN, and **per-device stream settings** (resolution, refresh) pushed to the host | Verified end to end against the real host on Linux. |
 | 📡 **Session signal:** Remote Play start/stop reported to your paired PCs | Verified on an AYN Odin 2 Portal streaming Celeste to a Linux PC: the host received both the start and the stop. |
-| 🖥️ **Virtual monitor on a real stream** | Verified with an AYN Odin 2 Portal streaming to a Windows PC: the monitor was created at stream start, became the display Steam streamed, and was removed afterwards. Not yet confirmed on a Linux host. |
+| 🖥️ **Virtual display on a real stream** | Windows (host 0.3, Steam client beta): verified with an AYN Odin 2 Portal. Steam's display was used, the other displays turned off during the stream and came back afterwards. Not yet confirmed on a Linux host. |
 | ⏰ **Wake-on-LAN** with an online check | Not yet run on the Portal. |
 | 🧩 **Apps tab:** lists the programs the host added to its Steam library (read-only, via the paired token) | Untested on the Portal. |
 | 🔎 **Network scan**, **Steam client decoder toggles** (HEVC/AV1), tabbed UI with L1/R1 switching, Spout icon | Ran on the device earlier; the latest UI changes have not been visually confirmed. |
