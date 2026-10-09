@@ -7,7 +7,8 @@ Decky Loader plugin for Steam Remote Play / native game streaming from a Steam D
 - Wake-on-LAN: implemented (magic packet to saved PCs, optional online check on ports 27036/3389/445). Not yet tested on a device.
 - Virtual-monitor handling: planned, lives in the host app: <https://github.com/justjoseorg/SpoutRemotePlayHost> (Windows and Linux, x86_64).
 
-- Per-host stream settings (virtual monitor resolution/refresh, codec preference hint) are pushed to the host app's API (port 47995) using the API token you paste in when adding the PC. Tested only against a fake host API; the codec setting is a hint because Steam picks the real codec.
+- Per-host stream settings (virtual monitor resolution/refresh, codec preference hint) are pushed to the host app's API (port 47995) using the per-device token you get by pairing.
+- **Pairing:** enter the PC's IP under "Pair a PC"; the plugin shows a 4-digit PIN, the PC shows a notification, and typing the PIN into Spout Host pairs the device and adds the PC (name, IP, MAC) to your Wake-on-LAN list automatically. Pair as many PCs as you like. Verified end to end against the real host on Linux (with a stand-in for Decky); not yet run on the Portal. If you pair over a VPN the PC's MAC can't be detected, so add it manually. Tested only against a fake host API; the codec setting is a hint because Steam picks the real codec.
 
 Architecture: no native code, so it runs on both ARM and x86 SteamOS devices.
 

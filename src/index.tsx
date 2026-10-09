@@ -60,6 +60,14 @@ const getDecoders = callable<[], DecoderState>("get_decoders");
 const setDecoders = callable<[values: Partial<Decoders>, enabled: boolean], DecoderState>(
   "set_decoders"
 );
+const startPairing = callable<[address: string], { ok: boolean; pin?: string; error?: string }>(
+  "start_pairing"
+);
+const pollPairing = callable<
+  [],
+  { ok: boolean; status?: "pending" | "approved" | "gone"; host?: Host; error?: string }
+>("poll_pairing");
+const cancelPairing = callable<[], boolean>("cancel_pairing");
 const hostStatus = callable<[hostId: string], boolean>("host_status");
 
 const RESOLUTIONS = [
@@ -262,6 +270,84 @@ function HostRow({ host, onRemove }: { host: Host; onRemove: () => void }) {
   );
 }
 
+function PairPC({ onPaired }: { onPaired: () => void }) {
+  const [address, setAddress] = useState("");
+  const [pin, setPin] = useState<string | null>(null);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    if (!pin) return;
+    let stopped = false;
+    const deadline = Date.now() + 120_000;
+    const tick = async () => {
+      if (stopped) return;
+      const r = await pollPairing();
+      if (stopped) return;
+      if (!r.ok) {
+        setMsg(r.error ?? "Pairing failed");
+        setPin(null);
+      } else if (r.status === "approved") {
+        setMsg(`Paired with ${r.host?.name ?? "PC"}`);
+        setPin(null);
+        toaster.toast({ title: "Spout", body: `Paired with ${r.host?.name ?? "PC"}` });
+        onPaired();
+      } else if (r.status === "gone" || Date.now() > deadline) {
+        setMsg("Pairing expired or was denied");
+        setPin(null);
+      } else {
+        setTimeout(tick, 2000);
+      }
+    };
+    const t = setTimeout(tick, 2000);
+    return () => {
+      stopped = true;
+      clearTimeout(t);
+    };
+  }, [pin]);
+
+  const start = async () => {
+    setMsg("");
+    const r = await startPairing(address);
+    if (r.ok) setPin(r.pin!);
+    else setMsg(r.error ?? "Failed");
+  };
+
+  return (
+    <>
+      {pin ? (
+        <>
+          <PanelSectionRow>
+            Enter PIN {pin} in the Spout Host notification on your PC
+          </PanelSectionRow>
+          <PanelSectionRow>
+            <ButtonItem
+              layout="below"
+              onClick={async () => {
+                await cancelPairing();
+                setPin(null);
+              }}
+            >
+              Cancel
+            </ButtonItem>
+          </PanelSectionRow>
+        </>
+      ) : (
+        <>
+          <PanelSectionRow>
+            <TextField label="PC IP address" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </PanelSectionRow>
+          <PanelSectionRow>
+            <ButtonItem layout="below" onClick={start}>
+              Pair PC
+            </ButtonItem>
+          </PanelSectionRow>
+        </>
+      )}
+      {msg && <PanelSectionRow>{msg}</PanelSectionRow>}
+    </>
+  );
+}
+
 function Content() {
   const [hosts, setHosts] = useState<Host[]>([]);
   const [name, setName] = useState("");
@@ -295,7 +381,7 @@ function Content() {
     <>
       <PanelSection title="PCs">
         {hosts.length === 0 && (
-          <PanelSectionRow>No PCs yet. Add one below.</PanelSectionRow>
+          <PanelSectionRow>No PCs yet. Pair one below.</PanelSectionRow>
         )}
         {hosts.map((h) => (
           <HostRow
@@ -311,7 +397,10 @@ function Content() {
       <PanelSection title="Client decoders">
         <DecoderSettings />
       </PanelSection>
-      <PanelSection title="Add PC">
+      <PanelSection title="Pair a PC">
+        <PairPC onPaired={refresh} />
+      </PanelSection>
+      <PanelSection title="Add PC manually">
         <PanelSectionRow>
           <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} />
         </PanelSectionRow>

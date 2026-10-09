@@ -1,6 +1,9 @@
 import asyncio
 import json
+import hashlib
 import os
+import secrets
+import socket
 import urllib.error
 import urllib.request
 import uuid
@@ -60,6 +63,8 @@ class Plugin:
         host = next((h for h in self._load() if h["id"] == host_id), None)
         if not host:
             return {"ok": False, "error": "Unknown host"}
+        if not host["mac"]:
+            return {"ok": False, "error": "This PC's MAC address is unknown; add it manually"}
         try:
             await asyncio.to_thread(send_magic_packet, host["mac"], host["broadcast"])
         except OSError as e:
@@ -125,6 +130,77 @@ class Plugin:
             return {"ok": False, "error": str(e)}
         st.pop("_config")
         return {"ok": True, **st}
+
+    def _post_json(self, address: str, path: str, body: dict) -> dict:
+        req = urllib.request.Request(
+            f"http://{address}:{HOST_API_PORT}{path}", data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"}, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                return json.load(resp)
+        except urllib.error.HTTPError as e:
+            try:
+                msg = json.load(e).get("error", e.reason)
+            except ValueError:
+                msg = e.reason
+            raise ValueError(str(msg))
+        except (urllib.error.URLError, OSError) as e:
+            raise ValueError(f"Cannot reach Spout Host at {address}: {e}")
+
+    async def start_pairing(self, address: str) -> dict:
+        """Ask the PC to pair. The PIN is shown here and typed into the host UI on the PC."""
+        address = (address or "").strip()
+        if not address:
+            return {"ok": False, "error": "Enter the PC's IP address"}
+        pin = f"{secrets.randbelow(10000):04d}"
+        salt, secret = secrets.token_hex(8), secrets.token_hex(16)
+        body = {
+            "name": socket.gethostname(),
+            "salt": salt,
+            "pinHash": hashlib.sha256((salt + pin).encode()).hexdigest(),
+            "secretHash": hashlib.sha256(secret.encode()).hexdigest(),
+        }
+        try:
+            res = await asyncio.to_thread(self._post_json, address, "/api/pair/request", body)
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+        self._pairing = {"id": res["id"], "secret": secret, "address": address}
+        return {"ok": True, "pin": pin}
+
+    async def poll_pairing(self) -> dict:
+        """Returns status pending/approved/gone; on approval the PC is saved (with its MAC for Wake-on-LAN)."""
+        p = getattr(self, "_pairing", None)
+        if not p:
+            return {"ok": True, "status": "gone"}
+        try:
+            res = await asyncio.to_thread(
+                self._post_json, p["address"], "/api/pair/poll", {"id": p["id"], "secret": p["secret"]})
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+        if res.get("status") != "approved":
+            if res.get("status") == "gone":
+                self._pairing = None
+            return {"ok": True, "status": res.get("status", "gone")}
+        self._pairing = None
+        try:
+            mac = normalize_mac(res.get("mac", ""))
+        except ValueError:
+            mac = ""
+        hosts = self._load()
+        host = next((h for h in hosts if (mac and h["mac"] == mac) or (not mac and h["address"] == p["address"])), None)
+        if host is None:
+            host = {"id": uuid.uuid4().hex, "broadcast": "255.255.255.255"}
+            hosts.append(host)
+        host.update({
+            "name": res.get("hostname") or p["address"], "mac": mac,
+            "address": p["address"], "token": res["token"],
+        })
+        self._save(hosts)
+        return {"ok": True, "status": "approved", "host": host}
+
+    async def cancel_pairing(self) -> bool:
+        self._pairing = None
+        return True
 
     async def host_status(self, host_id: str) -> bool:
         host = next((h for h in self._load() if h["id"] == host_id), None)
