@@ -1,7 +1,7 @@
 {
   "name": "spigot-remote-play",
   "version": "0.0.1",
-  "description": "Wake-on-LAN and companion control for Steam Remote Play (Decky plugin)",
+  "description": "Wake-on-LAN and host control for Steam Remote Play (Decky plugin)",
   "type": "module",
   "scripts": {
     "build": "rollup -c",

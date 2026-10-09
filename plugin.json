@@ -5,7 +5,7 @@
   "api_version": 1,
   "publish": {
     "tags": ["streaming", "wake-on-lan", "remote-play"],
-    "description": "Wake-on-LAN for Steam Remote Play hosts, with a Windows companion for virtual-monitor streaming.",
+    "description": "Wake-on-LAN for Steam Remote Play hosts, with a Windows and Linux host app for virtual-monitor streaming.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }

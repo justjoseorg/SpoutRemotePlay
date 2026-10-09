@@ -5,7 +5,7 @@ Decky Loader plugin for Steam Remote Play / native game streaming from a Steam D
 ## Status
 
 - Wake-on-LAN: implemented (magic packet to saved PCs, optional online check on ports 27036/3389/445). Not yet tested on a device.
-- Virtual-monitor handling: planned, lives in the companion app: <https://github.com/justjoseorg/SpigotRemotePlay-Companion> (Windows and Linux, x86_64).
+- Virtual-monitor handling: planned, lives in the host app: <https://github.com/justjoseorg/SpigotRemotePlayHost> (Windows and Linux, x86_64).
 
 ## Layout
 
