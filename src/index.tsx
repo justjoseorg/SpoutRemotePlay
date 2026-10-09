@@ -666,10 +666,28 @@ function SpoutIcon() {
   );
 }
 
-export default definePlugin(() => ({
-  name: "SpoutRemotePlay",
-  titleView: <div className={staticClasses.Title}>SpoutRemotePlay</div>,
-  content: <Content />,
-  icon: <SpoutIcon />,
-  onDismount() {},
-}));
+const sessionEvent = callable<[state: string], unknown>("session_event");
+
+// Tell paired hosts when this device starts/stops a Remote Play stream so they
+// can create/remove the virtual monitor.
+function watchRemotePlay(): () => void {
+  const rp = (window as any).SteamClient?.RemotePlay;
+  const subs = [
+    rp?.RegisterForRemoteClientStarted?.(() => void sessionEvent("start")),
+    rp?.RegisterForRemoteClientStopped?.(() => void sessionEvent("stop")),
+  ];
+  return () => subs.forEach((s) => s?.unregister?.());
+}
+
+export default definePlugin(() => {
+  const stopWatching = watchRemotePlay();
+  return {
+    name: "SpoutRemotePlay",
+    titleView: <div className={staticClasses.Title}>SpoutRemotePlay</div>,
+    content: <Content />,
+    icon: <SpoutIcon />,
+    onDismount() {
+      stopWatching();
+    },
+  };
+});

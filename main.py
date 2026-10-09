@@ -272,6 +272,28 @@ class Plugin:
 
         return await asyncio.to_thread(probe)
 
+    def _send_session(self, host: dict, state: str) -> bool:
+        req = urllib.request.Request(
+            f"http://{host['address']}:{HOST_API_PORT}/api/session",
+            data=json.dumps({"state": state}).encode(), method="POST")
+        req.add_header("Authorization", f"Bearer {host['token']}")
+        req.add_header("Content-Type", "application/json")
+        try:
+            with urllib.request.urlopen(req, timeout=5):
+                return True
+        except (urllib.error.URLError, OSError) as e:
+            decky.logger.warning(f"session {state} to {host['name']} failed: {e}")
+            return False
+
+    async def session_event(self, state: str) -> dict:
+        if state not in ("start", "stop"):
+            return {"ok": False}
+        hosts = [h for h in self._load() if h.get("token") and h.get("address")]
+        results = await asyncio.gather(
+            *(asyncio.to_thread(self._send_session, h, state) for h in hosts))
+        decky.logger.info(f"remote play {state}: notified {sum(results)}/{len(hosts)} hosts")
+        return {"ok": True, "notified": sum(results)}
+
     async def _main(self):
         decky.logger.info("SpoutRemotePlay loaded")
 
