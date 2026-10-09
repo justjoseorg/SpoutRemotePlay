@@ -355,8 +355,8 @@ function Content() {
 }
 
 export default definePlugin(() => ({
-  name: "SpigotRemotePlay",
-  titleView: <div className={staticClasses.Title}>SpigotRemotePlay</div>,
+  name: "SpoutRemotePlay",
+  titleView: <div className={staticClasses.Title}>SpoutRemotePlay</div>,
   content: <Content />,
   icon: <FaPlug />,
   onDismount() {},

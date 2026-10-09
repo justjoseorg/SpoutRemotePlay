@@ -47,16 +47,16 @@ jobs:
         env:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          mkdir -p out/SpigotRemotePlay
-          cp -r dist py_modules main.py plugin.json package.json LICENSE out/SpigotRemotePlay/
-          (cd out && zip -qr "../SpigotRemotePlay-v${VERSION}.zip" SpigotRemotePlay)
+          mkdir -p out/SpoutRemotePlay
+          cp -r dist py_modules main.py plugin.json package.json LICENSE out/SpoutRemotePlay/
+          (cd out && zip -qr "../SpoutRemotePlay-v${VERSION}.zip" SpoutRemotePlay)
 
       - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          gh release create "v${VERSION}" "SpigotRemotePlay-v${VERSION}.zip" \
+          gh release create "v${VERSION}" "SpoutRemotePlay-v${VERSION}.zip" \
             --target "${{ github.event.pull_request.merge_commit_sha }}" \
             --title "v${VERSION}" \
             --notes "${{ github.event.pull_request.title }} (#${{ github.event.pull_request.number }})"

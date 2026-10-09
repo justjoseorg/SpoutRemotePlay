@@ -137,7 +137,7 @@ class Plugin:
         return await asyncio.to_thread(probe)
 
     async def _main(self):
-        decky.logger.info("SpigotRemotePlay loaded")
+        decky.logger.info("SpoutRemotePlay loaded")
 
     async def _unload(self):
-        decky.logger.info("SpigotRemotePlay unloaded")
+        decky.logger.info("SpoutRemotePlay unloaded")
