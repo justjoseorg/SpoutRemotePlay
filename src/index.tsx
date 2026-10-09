@@ -62,8 +62,10 @@ const setDecoders = callable<[values: Partial<Decoders>, enabled: boolean], Deco
 );
 const hostStatus = callable<[hostId: string], boolean>("host_status");
 
-const RESOLUTIONS = ["1280x800", "1920x1080", "2560x1440", "3840x2160"];
-const REFRESH = [60, 90, 120];
+const RESOLUTIONS = [
+  "1280x720", "1280x800", "1920x1080", "1920x1200", "2560x1440", "2560x1600", "3840x2160",
+];
+const REFRESH = [30, 60, 90, 120, 144, 165, 240];
 const CODECS = [
   { data: "auto", label: "Auto" },
   { data: "h264", label: "H.264" },
@@ -134,6 +136,8 @@ function DecoderSettings() {
 function StreamSettings({ host }: { host: Host }) {
   const [s, setS] = useState<HostSettings | null>(null);
   const [msg, setMsg] = useState("");
+  const [customRes, setCustomRes] = useState("");
+  const [customHz, setCustomHz] = useState("");
 
   useEffect(() => {
     getHostSettings(host.id).then((r) => (r.ok ? setS(r.settings!) : setMsg(r.error ?? "Failed")));
@@ -142,6 +146,17 @@ function StreamSettings({ host }: { host: Host }) {
   if (!s) return <PanelSectionRow>{msg || "Loading…"}</PanelSectionRow>;
 
   const res = `${s.width}x${s.height}`;
+  const resOptions = RESOLUTIONS.includes(res) ? RESOLUTIONS : [res, ...RESOLUTIONS];
+  const hzOptions = REFRESH.includes(s.refreshHz) ? REFRESH : [s.refreshHz, ...REFRESH];
+  const applyCustom = () => {
+    const m = /^(\d{3,4})x(\d{3,4})$/.exec(customRes.trim().toLowerCase());
+    const hz = customHz.trim() ? Number(customHz) : s.refreshHz;
+    if (!m || !Number.isInteger(hz)) {
+      setMsg("Use WIDTHxHEIGHT (e.g. 1920x1200) and a whole-number Hz");
+      return;
+    }
+    apply({ ...s, width: Number(m[1]), height: Number(m[2]), refreshHz: hz });
+  };
   const apply = async (next: HostSettings) => {
     setS(next);
     const r = await setHostSettings(host.id, next);
@@ -153,7 +168,7 @@ function StreamSettings({ host }: { host: Host }) {
       <PanelSectionRow>
         <DropdownItem
           label="Virtual monitor resolution"
-          rgOptions={RESOLUTIONS.map((r) => ({ data: r, label: r }))}
+          rgOptions={resOptions.map((r) => ({ data: r, label: r }))}
           selectedOption={res}
           onChange={(o) => {
             const [w, h] = (o.data as string).split("x").map(Number);
@@ -164,10 +179,21 @@ function StreamSettings({ host }: { host: Host }) {
       <PanelSectionRow>
         <DropdownItem
           label="Refresh rate"
-          rgOptions={REFRESH.map((r) => ({ data: r, label: `${r} Hz` }))}
+          rgOptions={hzOptions.map((r) => ({ data: r, label: `${r} Hz` }))}
           selectedOption={s.refreshHz}
           onChange={(o) => apply({ ...s, refreshHz: o.data as number })}
         />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <TextField label="Custom resolution (WxH)" value={customRes} onChange={(e) => setCustomRes(e.target.value)} />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <TextField label="Custom refresh (Hz)" value={customHz} onChange={(e) => setCustomHz(e.target.value)} />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ButtonItem layout="below" onClick={applyCustom}>
+          Apply custom mode
+        </ButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>
         <DropdownItem
