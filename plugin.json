@@ -5,7 +5,7 @@
   "api_version": 1,
   "publish": {
     "tags": ["streaming", "wake-on-lan", "remote-play"],
-    "description": "Wake-on-LAN for Steam Remote Play hosts, with a Windows and Linux host app for virtual-monitor streaming.",
-    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
+    "description": "A virtual monitor for native Steam Remote Play: wake your PC, pair once, and each stream gets a monitor matching your handheld (needs the SpoutRemotePlayHost app on the PC).",
+    "image": "https://raw.githubusercontent.com/justjoseorg/SpoutRemotePlay/main/assets/logo.png"
   }
 }
