@@ -1,6 +1,8 @@
 import asyncio
 import json
 import os
+import urllib.error
+import urllib.request
 import uuid
 
 import decky
@@ -9,6 +11,7 @@ from wol import is_port_open, normalize_mac, send_magic_packet, wait_until_onlin
 
 # Steam Remote Play / In-Home Streaming listens on 27036 (TCP); RDP and SMB as fallbacks.
 PROBE_PORTS = (27036, 3389, 445)
+HOST_API_PORT = 47995
 SETTINGS_FILE = os.path.join(decky.DECKY_PLUGIN_SETTINGS_DIR, "hosts.json")
 
 
@@ -30,7 +33,7 @@ class Plugin:
     async def get_hosts(self) -> list:
         return self._load()
 
-    async def add_host(self, name: str, mac: str, address: str, broadcast: str) -> dict:
+    async def add_host(self, name: str, mac: str, address: str, broadcast: str, token: str = "") -> dict:
         try:
             host = {
                 "id": uuid.uuid4().hex,
@@ -38,6 +41,7 @@ class Plugin:
                 "mac": normalize_mac(mac),
                 "address": (address or "").strip(),
                 "broadcast": (broadcast or "").strip() or "255.255.255.255",
+                "token": (token or "").strip(),
             }
         except ValueError as e:
             return {"ok": False, "error": str(e)}
@@ -65,6 +69,45 @@ class Plugin:
             return {"ok": True, "online": None}
         online = await asyncio.to_thread(wait_until_online, host["address"], PROBE_PORTS, 90)
         return {"ok": True, "online": online}
+
+    def _host_request(self, host: dict, method: str, body: dict | None = None) -> dict:
+        if not host.get("address"):
+            raise ValueError("Set the PC's IP address first")
+        data = json.dumps(body).encode() if body is not None else None
+        req = urllib.request.Request(
+            f"http://{host['address']}:{HOST_API_PORT}/api/config", data=data, method=method)
+        if host.get("token"):
+            req.add_header("Authorization", f"Bearer {host['token']}")
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                return json.load(resp)
+        except urllib.error.HTTPError as e:
+            try:
+                msg = json.load(e).get("error", e.reason)
+            except ValueError:
+                msg = e.reason
+            raise ValueError(f"Host replied {e.code}: {msg}")
+        except (urllib.error.URLError, OSError) as e:
+            raise ValueError(f"Cannot reach host app: {e}")
+
+    async def get_host_settings(self, host_id: str) -> dict:
+        host = next((h for h in self._load() if h["id"] == host_id), None)
+        if not host:
+            return {"ok": False, "error": "Unknown host"}
+        try:
+            return {"ok": True, "settings": await asyncio.to_thread(self._host_request, host, "GET")}
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+
+    async def set_host_settings(self, host_id: str, settings: dict) -> dict:
+        host = next((h for h in self._load() if h["id"] == host_id), None)
+        if not host:
+            return {"ok": False, "error": "Unknown host"}
+        try:
+            saved = await asyncio.to_thread(self._host_request, host, "PUT", settings)
+            return {"ok": True, "settings": saved}
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
 
     async def host_status(self, host_id: str) -> bool:
         host = next((h for h in self._load() if h["id"] == host_id), None)

@@ -1,5 +1,6 @@
 import {
   ButtonItem,
+  DropdownItem,
   PanelSection,
   PanelSectionRow,
   TextField,
@@ -15,11 +16,20 @@ interface Host {
   mac: string;
   address: string;
   broadcast: string;
+  token?: string;
+}
+
+interface HostSettings {
+  width: number;
+  height: number;
+  refreshHz: number;
+  autoCreate: boolean;
+  codec: string;
 }
 
 const getHosts = callable<[], Host[]>("get_hosts");
 const addHost = callable<
-  [name: string, mac: string, address: string, broadcast: string],
+  [name: string, mac: string, address: string, broadcast: string, token: string],
   { ok: boolean; error?: string }
 >("add_host");
 const removeHost = callable<[hostId: string], boolean>("remove_host");
@@ -27,10 +37,79 @@ const wakeHost = callable<
   [hostId: string],
   { ok: boolean; online?: boolean | null; error?: string }
 >("wake_host");
+const getHostSettings = callable<
+  [hostId: string],
+  { ok: boolean; settings?: HostSettings; error?: string }
+>("get_host_settings");
+const setHostSettings = callable<
+  [hostId: string, settings: HostSettings],
+  { ok: boolean; settings?: HostSettings; error?: string }
+>("set_host_settings");
 const hostStatus = callable<[hostId: string], boolean>("host_status");
+
+const RESOLUTIONS = ["1280x800", "1920x1080", "2560x1440", "3840x2160"];
+const REFRESH = [60, 90, 120];
+const CODECS = [
+  { data: "auto", label: "Auto" },
+  { data: "h264", label: "H.264" },
+  { data: "hevc", label: "HEVC" },
+  { data: "av1", label: "AV1" },
+];
+
+function StreamSettings({ host }: { host: Host }) {
+  const [s, setS] = useState<HostSettings | null>(null);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    getHostSettings(host.id).then((r) => (r.ok ? setS(r.settings!) : setMsg(r.error ?? "Failed")));
+  }, [host.id]);
+
+  if (!s) return <PanelSectionRow>{msg || "Loading…"}</PanelSectionRow>;
+
+  const res = `${s.width}x${s.height}`;
+  const apply = async (next: HostSettings) => {
+    setS(next);
+    const r = await setHostSettings(host.id, next);
+    setMsg(r.ok ? "Saved on host" : r.error ?? "Failed");
+  };
+
+  return (
+    <>
+      <PanelSectionRow>
+        <DropdownItem
+          label="Virtual monitor resolution"
+          rgOptions={RESOLUTIONS.map((r) => ({ data: r, label: r }))}
+          selectedOption={res}
+          onChange={(o) => {
+            const [w, h] = (o.data as string).split("x").map(Number);
+            apply({ ...s, width: w, height: h });
+          }}
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <DropdownItem
+          label="Refresh rate"
+          rgOptions={REFRESH.map((r) => ({ data: r, label: `${r} Hz` }))}
+          selectedOption={s.refreshHz}
+          onChange={(o) => apply({ ...s, refreshHz: o.data as number })}
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <DropdownItem
+          label="Codec preference (hint; Steam picks)"
+          rgOptions={CODECS}
+          selectedOption={s.codec}
+          onChange={(o) => apply({ ...s, codec: o.data as string })}
+        />
+      </PanelSectionRow>
+      {msg && <PanelSectionRow>{msg}</PanelSectionRow>}
+    </>
+  );
+}
 
 function HostRow({ host, onRemove }: { host: Host; onRemove: () => void }) {
   const [busy, setBusy] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [online, setOnline] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -65,6 +144,14 @@ function HostRow({ host, onRemove }: { host: Host; onRemove: () => void }) {
           {busy ? "Waking…" : `Wake ${host.name}${status}`}
         </ButtonItem>
       </PanelSectionRow>
+      {host.address && (
+        <PanelSectionRow>
+          <ButtonItem layout="below" onClick={() => setShowSettings(!showSettings)}>
+            {showSettings ? "Hide stream settings" : "Stream settings"}
+          </ButtonItem>
+        </PanelSectionRow>
+      )}
+      {showSettings && <StreamSettings host={host} />}
       <PanelSectionRow>
         <ButtonItem layout="below" onClick={onRemove}>
           Remove {host.name}
@@ -80,6 +167,7 @@ function Content() {
   const [mac, setMac] = useState("");
   const [address, setAddress] = useState("");
   const [broadcast, setBroadcast] = useState("");
+  const [token, setToken] = useState("");
   const [error, setError] = useState("");
 
   const refresh = () => getHosts().then(setHosts);
@@ -88,7 +176,7 @@ function Content() {
   }, []);
 
   const add = async () => {
-    const res = await addHost(name, mac, address, broadcast);
+    const res = await addHost(name, mac, address, broadcast, token);
     if (!res.ok) {
       setError(res.error ?? "Failed to add host");
       return;
@@ -98,6 +186,7 @@ function Content() {
     setMac("");
     setAddress("");
     setBroadcast("");
+    setToken("");
     refresh();
   };
 
@@ -141,6 +230,13 @@ function Content() {
             label="Broadcast (default 255.255.255.255)"
             value={broadcast}
             onChange={(e) => setBroadcast(e.target.value)}
+          />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <TextField
+            label="Host app API token (for stream settings)"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
           />
         </PanelSectionRow>
         {error && <PanelSectionRow>{error}</PanelSectionRow>}
