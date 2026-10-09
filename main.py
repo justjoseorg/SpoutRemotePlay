@@ -1,4 +1,6 @@
 import asyncio
+import concurrent.futures
+import ipaddress
 import json
 import hashlib
 import os
@@ -146,6 +148,41 @@ class Plugin:
             raise ValueError(str(msg))
         except (urllib.error.URLError, OSError) as e:
             raise ValueError(f"Cannot reach Spout Host at {address}: {e}")
+
+    def _local_ipv4(self) -> str:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("192.0.2.1", 9))  # no packet is sent; just selects the outgoing interface
+            return s.getsockname()[0]
+
+    def _probe(self, ip: str):
+        if not is_port_open(ip, HOST_API_PORT, 0.4):
+            return None
+        try:
+            with urllib.request.urlopen(f"http://{ip}:{HOST_API_PORT}/api/discover", timeout=2) as r:
+                info = json.load(r)
+        except (urllib.error.URLError, OSError, ValueError):
+            return None
+        if info.get("app") != "spout-host":
+            return None
+        return {"address": ip, "name": str(info.get("name") or ip)[:60]}
+
+    async def scan_hosts(self) -> dict:
+        """Find Spout Host instances on the local /24."""
+        try:
+            me = self._local_ipv4()
+        except OSError as e:
+            return {"ok": False, "error": f"No network: {e}"}
+        paired = {h["address"] for h in self._load()}
+        ips = [str(ip) for ip in ipaddress.ip_network(f"{me}/24", strict=False).hosts() if str(ip) != me]
+
+        def run():
+            with concurrent.futures.ThreadPoolExecutor(max_workers=64) as ex:
+                return [r for r in ex.map(self._probe, ips) if r]
+
+        found = await asyncio.to_thread(run)
+        for f in found:
+            f["paired"] = f["address"] in paired
+        return {"ok": True, "hosts": sorted(found, key=lambda f: f["address"])}
 
     async def start_pairing(self, address: str) -> dict:
         """Ask the PC to pair. The PIN is shown here and typed into the host UI on the PC."""
