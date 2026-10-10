@@ -1,5 +1,6 @@
 import {
   ButtonItem,
+  ConfirmModal,
   DialogButton,
   DropdownItem,
   Focusable,
@@ -8,6 +9,7 @@ import {
   PanelSectionRow,
   TextField,
   ToggleField,
+  showModal,
   staticClasses,
 } from "@decky/ui";
 import { callable, definePlugin, toaster } from "@decky/api";
@@ -98,6 +100,8 @@ const signIn = callable<
   [hostId: string, pin: string],
   { ok: boolean; state?: HostState; error?: string }
 >("sign_in");
+
+const shutdownHost = callable<[hostId: string], { ok: boolean; error?: string }>("shutdown_host");
 
 const RESOLUTIONS = [
   "1280x720",
@@ -376,6 +380,25 @@ function HostRow({ host }: { host: Host }) {
     }
   };
 
+  const shutdown = () =>
+    showModal(
+      <ConfirmModal
+        strTitle={`Shut down ${host.name}?`}
+        strDescription="Apps with unsaved work may stop the shutdown. You can wake the PC again from here."
+        strOKButtonText="Shut down"
+        onOK={async () => {
+          const res = await shutdownHost(host.id);
+          if (!res.ok) {
+            toaster.toast({ title: "Shut down failed", body: res.error ?? "Unknown error" });
+            return;
+          }
+          setPadOpen(false);
+          setState("off");
+          toaster.toast({ title: host.name, body: "Shutting down" });
+        }}
+      />,
+    );
+
   const status = state ? ` • ${STATE_LABEL[state]}` : "";
 
   return (
@@ -398,6 +421,13 @@ function HostRow({ host }: { host: Host }) {
         </PanelSectionRow>
       )}
       {state === "on" && padOpen && <PinPad busy={signingIn} onSubmit={submitPin} />}
+      {state === "ready" && host.token && (
+        <PanelSectionRow>
+          <ButtonItem layout="below" onClick={shutdown}>
+            Shut down
+          </ButtonItem>
+        </PanelSectionRow>
+      )}
     </>
   );
 }

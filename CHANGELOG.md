@@ -2,6 +2,10 @@
 
 Minor releases (`X.Y.0`) get a written entry here, which becomes their release notes. Patch releases (`X.Y.Z`) are listed on the [Releases](https://github.com/justjoseorg/SpoutRemotePlay/releases) page with the change that produced them. Each entry covers everything since the previous minor release.
 
+## 0.5
+
+- **Shut down a PC from the plugin:** when a PC is ready, a **Shut down** button (with a confirmation) asks its host to shut it down. Needs Spout Remote Play Host 0.7 or later. Windows does a full shutdown, so Wake can turn it back on.
+
 ## 0.4
 
 - **Wake-on-LAN works with WireGuard on.** A full-tunnel VPN takes over 255.255.255.255, so the magic packet went into the tunnel instead of the home network. Wake now also sends to each local network's own broadcast address (for example 192.168.1.255), which stays on Wi-Fi.
