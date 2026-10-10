@@ -15,11 +15,13 @@ import uuid
 import decky
 
 import steamcfg
-from wol import is_port_open, normalize_mac, send_magic_packet, wait_until_online
+from wol import is_port_open, normalize_mac, probe_state, send_magic_packet, wait_until_ready
 
-# Steam Remote Play / In-Home Streaming listens on 27036 (TCP); RDP and SMB as fallbacks.
-PROBE_PORTS = (27036, 3389, 445)
 HOST_API_PORT = 47995
+# Steam (27036) and Spout Host only listen once someone is signed in; RDP and SMB answer at the sign-in screen too.
+SIGNIN_PORT = 47994  # optional Spout Sign-In service on Windows; answers at the sign-in screen
+READY_PORTS = (27036, HOST_API_PORT)
+ON_PORTS = (SIGNIN_PORT, 3389, 445, 22)
 SETTINGS_FILE = os.path.join(decky.DECKY_PLUGIN_SETTINGS_DIR, "hosts.json")
 STREAMING_LOG = "/tmp/streaming_client.log"
 STREAM_TARGET_TRIES = 10
@@ -78,9 +80,9 @@ class Plugin:
             return {"ok": False, "error": str(e)}
         decky.logger.info(f"Sent magic packet to {host['name']} ({host['mac']})")
         if not host["address"]:
-            return {"ok": True, "online": None}
-        online = await asyncio.to_thread(wait_until_online, host["address"], PROBE_PORTS, 90)
-        return {"ok": True, "online": online}
+            return {"ok": True, "state": None}
+        state = await asyncio.to_thread(wait_until_ready, host["address"], READY_PORTS, ON_PORTS, 90)
+        return {"ok": True, "state": state}
 
     def _host_request(self, host: dict, method: str, body: dict | None = None, path: str = "/api/config") -> dict:
         if not host.get("address"):
@@ -281,15 +283,47 @@ class Plugin:
         self._pairing = None
         return True
 
-    async def host_status(self, host_id: str) -> bool:
+    async def sign_in(self, host_id: str, pin: str) -> dict:
+        """Send the PIN to the PC's Spout Sign-In service once. It is never stored or logged."""
+        host = next((h for h in self._load() if h["id"] == host_id), None)
+        if not host or not host.get("address"):
+            return {"ok": False, "error": "Unknown host"}
+        if not host.get("token"):
+            return {"ok": False, "error": "Pair this PC first"}
+        if not (isinstance(pin, str) and pin.isascii() and pin.isdigit() and 4 <= len(pin) <= 32):
+            return {"ok": False, "error": "The PIN must be 4 to 32 digits"}
+        req = urllib.request.Request(
+            f"http://{host['address']}:{SIGNIN_PORT}/api/signin", data=json.dumps({"pin": pin}).encode(),
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {host['token']}"},
+            method="POST")
+        pin = ""
+
+        def send():
+            try:
+                with urllib.request.urlopen(req, timeout=40):
+                    return None
+            except urllib.error.HTTPError as e:
+                try:
+                    return str(json.load(e).get("error", e.reason))
+                except ValueError:
+                    return str(e.reason)
+            except (urllib.error.URLError, OSError):
+                return "Spout Sign-In isn't reachable on this PC. Install it with the host's Setup."
+
+        err = await asyncio.to_thread(send)
+        req.data = None
+        if err:
+            decky.logger.info(f"sign-in on {host['name']} failed: {err}")
+            return {"ok": False, "error": err}
+        decky.logger.info(f"sign-in PIN sent to {host['name']}")
+        state = await asyncio.to_thread(wait_until_ready, host["address"], READY_PORTS, ON_PORTS, 60)
+        return {"ok": True, "state": state}
+
+    async def host_status(self, host_id: str) -> str:
         host = next((h for h in self._load() if h["id"] == host_id), None)
         if not host or not host["address"]:
-            return False
-
-        def probe():
-            return any(is_port_open(host["address"], p, 0.7) for p in PROBE_PORTS)
-
-        return await asyncio.to_thread(probe)
+            return "off"
+        return await asyncio.to_thread(probe_state, host["address"], READY_PORTS, ON_PORTS)
 
     def _send_session(self, host: dict, state: str) -> bool:
         req = urllib.request.Request(

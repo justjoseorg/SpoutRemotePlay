@@ -51,7 +51,7 @@ On Windows, Steam's client beta now creates that virtual display itself, so the 
 
 | Step | |
 |---|---|
-| 1️⃣ **Wake the PC** | Open the plugin, tap your PC, and it sends Wake-on-LAN and waits until it's up. |
+| 1️⃣ **Wake the PC** | Open the plugin, tap your PC, and it sends Wake-on-LAN and waits until Steam is up. If the PC is on but nobody is signed in (Windows), tap **Sign in with PIN** and type your Windows PIN on the numpad. This needs the host's optional [Spout Sign-In](https://github.com/justjoseorg/SpoutRemotePlayHost#-sign-in-after-wake-on-lan-windows); the PIN is sent once and never stored. |
 | 2️⃣ **Pair once** | Enter the PC's IP, type the 4-digit PIN shown on the PC, and you're done. The plugin also learns the PC's MAC address and tells the host what your device can decode (HEVC/AV1) and its screen size. |
 | 3️⃣ **Press play in Steam** | As usual. The plugin notices Steam's Remote Play session and tells the PC you're streaming from (and only that one). On Windows, Steam creates a virtual display for your device and the host turns your other displays off; on Linux, the host creates the virtual display with your device's resolution and refresh rate. When you quit, everything goes back. |
 
@@ -73,7 +73,8 @@ Requires [Decky Loader](https://decky.xyz/). No native code, so it runs on both 
 | 🔐 **Pairing** with a PIN, and **per-device stream settings** (resolution, refresh) pushed to the host | Verified end to end against the real host on Linux. |
 | 📡 **Session signal:** Remote Play start/stop reported to your paired PCs | Verified on an AYN Odin 2 Portal streaming Celeste to a Linux PC: the host received both the start and the stop. |
 | 🖥️ **Virtual display on a real stream** | Windows (host 0.3, Steam client beta): verified with an AYN Odin 2 Portal. Steam's display was used, the other displays turned off during the stream and came back afterwards. Linux: verified with the same handheld; the host created a virtual display for the stream and removed it afterwards. |
-| ⏰ **Wake-on-LAN** with an online check | Not yet run on the Portal. |
+| ⏰ **Wake-on-LAN** with an online check | Not yet run on the Portal. The check tells "online" (Steam or the host answers) from "not signed in" (only Windows answers); that check was run from the Portal against two signed-in PCs. |
+| 🔑 **Sign in with PIN** numpad for a PC at the Windows sign-in screen | Not yet tested on a device. |
 | 🧩 **Apps tab:** lists the programs the host added to its Steam library (read-only, via the paired token) | Untested on the Portal. |
 | 🌊 **Force PyroWave** on or off (Advanced), even when Steam greys out its toggle | On an AYN Odin 2 Portal: turning it off and on saves to Steam's streaming config. A stream with it off has not been run yet. |
 | 🔎 **Network scan**, **Steam client decoder toggles** (HEVC/AV1), tabbed UI with L1/R1 switching, Spout icon | Ran on the device earlier; the latest UI changes have not been visually confirmed. |

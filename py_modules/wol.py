@@ -35,10 +35,22 @@ def is_port_open(host: str, port: int, timeout: float = 1.0) -> bool:
         return False
 
 
-def wait_until_online(host: str, ports, timeout: float) -> bool:
+def probe_state(host: str, ready_ports, on_ports, timeout: float = 0.7) -> str:
+    """"ready" when something that needs a signed-in user answers, "on" when only the OS does, else "off"."""
+    if any(is_port_open(host, p, timeout) for p in ready_ports):
+        return "ready"
+    if any(is_port_open(host, p, timeout) for p in on_ports):
+        return "on"
+    return "off"
+
+
+def wait_until_ready(host: str, ready_ports, on_ports, timeout: float) -> str:
+    """Wait for "ready"; returns the last state seen when time runs out."""
     deadline = time.monotonic() + timeout
+    state = "off"
     while time.monotonic() < deadline:
-        if any(is_port_open(host, p) for p in ports):
-            return True
+        state = probe_state(host, ready_ports, on_ports, 1.0)
+        if state == "ready":
+            break
         time.sleep(2)
-    return False
+    return state
