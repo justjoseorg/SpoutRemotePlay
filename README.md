@@ -75,6 +75,7 @@ Requires [Decky Loader](https://decky.xyz/). No native code, so it runs on both 
 | 🖥️ **Virtual display on a real stream** | Windows (host 0.3, Steam client beta): verified with an AYN Odin 2 Portal. Steam's display was used, the other displays turned off during the stream and came back afterwards. Linux: verified with the same handheld; the host created a virtual display for the stream and removed it afterwards. |
 | ⏰ **Wake-on-LAN** with an online check | Not yet run on the Portal. |
 | 🧩 **Apps tab:** lists the programs the host added to its Steam library (read-only, via the paired token) | Untested on the Portal. |
+| 🌊 **Force PyroWave** on or off (Advanced), even when Steam greys out its toggle | On an AYN Odin 2 Portal: turning it off and on saves to Steam's streaming config. A stream with it off has not been run yet. |
 | 🔎 **Network scan**, **Steam client decoder toggles** (HEVC/AV1), tabbed UI with L1/R1 switching, Spout icon | Ran on the device earlier; the latest UI changes have not been visually confirmed. |
 
 If you have several paired PCs, the start/stop signal goes to all of them for now. A game that is still starting when the monitor switches can crash (seen with Celeste on Windows); connecting again works.
