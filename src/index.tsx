@@ -149,17 +149,25 @@ function DecoderSettings() {
           </PanelSectionRow>
           <PanelSectionRow>
             <ToggleField
-              label="AV1"
+              label={st.av1_available ? "AV1" : "AV1 (force)"}
+              description={
+                st.av1_available
+                  ? undefined
+                  : "Steam reports no AV1 decoder; forcing it may fail or fall back."
+              }
               checked={d.av1}
-              disabled={!st.av1_available}
               onChange={(v) => change({ av1: v })}
             />
           </PanelSectionRow>
           <PanelSectionRow>
             <ToggleField
-              label="PyroWave"
+              label={st.pyrowave_available ? "PyroWave" : "PyroWave (force)"}
+              description={
+                st.pyrowave_available
+                  ? undefined
+                  : "Steam reports PyroWave unavailable; forcing it skips that check."
+              }
               checked={d.pyrowave}
-              disabled={!st.pyrowave_available}
               onChange={(v) => change({ pyrowave: v })}
             />
           </PanelSectionRow>
