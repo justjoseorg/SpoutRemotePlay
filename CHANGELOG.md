@@ -5,6 +5,7 @@ Minor releases (`X.Y.0`) get a written entry here, which becomes their release n
 ## 0.5
 
 - **Shut down a PC from the plugin:** when a PC is ready, a **Shut down** button (with a confirmation) asks its host to shut it down. Needs Spout Remote Play Host 0.7 or later. Windows does a full shutdown, so Wake can turn it back on.
+- **R1/L1 keep focus on the tabs:** switching tabs with the bumpers moves focus to the new tab instead of the panel's back button. *(0.5.1)*
 
 ## 0.4
 
