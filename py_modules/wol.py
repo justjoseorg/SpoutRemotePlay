@@ -1,5 +1,7 @@
+import fcntl
 import re
 import socket
+import struct
 import time
 
 _MAC_RE = re.compile(r"^[0-9a-f]{12}$")
@@ -17,14 +19,52 @@ def build_magic_packet(mac: str) -> bytes:
     return b"\xff" * 6 + raw * 16
 
 
+def local_broadcasts() -> list:
+    """Broadcast addresses of this device's network interfaces, e.g. 192.168.1.255.
+
+    255.255.255.255 follows the default route, so with a full-tunnel VPN such as
+    WireGuard it goes into the tunnel and never reaches the LAN. A subnet's own
+    broadcast address always leaves through that subnet's interface.
+    """
+    SIOCGIFFLAGS, SIOCGIFBRDADDR, IFF_BROADCAST, IFF_UP = 0x8913, 0x8919, 0x2, 0x1
+    out = []
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        for _, name in socket.if_nameindex():
+            req = struct.pack("256s", name.encode()[:15])
+            try:
+                flags = struct.unpack("H", fcntl.ioctl(sock.fileno(), SIOCGIFFLAGS, req)[16:18])[0]
+                if flags & (IFF_BROADCAST | IFF_UP) != IFF_BROADCAST | IFF_UP:
+                    continue
+                addr = socket.inet_ntoa(fcntl.ioctl(sock.fileno(), SIOCGIFBRDADDR, req)[20:24])
+            except OSError:
+                continue
+            if addr != "0.0.0.0" and addr not in out:
+                out.append(addr)
+    return out
+
+
 def send_magic_packet(mac: str, broadcast: str = "255.255.255.255", port: int = 9) -> None:
+    """Send to the configured broadcast address and to every local subnet's broadcast address."""
     packet = build_magic_packet(mac)
+    try:
+        extra = local_broadcasts()
+    except OSError:
+        extra = []
+    targets = [broadcast] + [b for b in extra if b != broadcast]
+    # Port 7 is also commonly listened on, so send there too.
+    ports = (port,) if port == 7 else (port, 7)
+    sent, error = 0, None
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        # Port 7 is also commonly listened on, so send there too.
-        sock.sendto(packet, (broadcast, port))
-        if port != 7:
-            sock.sendto(packet, (broadcast, 7))
+        for target in targets:
+            for p in ports:
+                try:
+                    sock.sendto(packet, (target, p))
+                    sent += 1
+                except OSError as e:
+                    error = e
+    if not sent and error:
+        raise error
 
 
 def is_port_open(host: str, port: int, timeout: float = 1.0) -> bool:

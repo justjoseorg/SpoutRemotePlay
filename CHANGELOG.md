@@ -2,6 +2,11 @@
 
 Minor releases (`X.Y.0`) get a written entry here, which becomes their release notes. Patch releases (`X.Y.Z`) are listed on the [Releases](https://github.com/justjoseorg/SpoutRemotePlay/releases) page with the change that produced them. Each entry covers everything since the previous minor release.
 
+## 0.4
+
+- **Wake-on-LAN works with WireGuard on.** A full-tunnel VPN takes over 255.255.255.255, so the magic packet went into the tunnel instead of the home network. Wake now also sends to each local network's own broadcast address (for example 192.168.1.255), which stays on Wi-Fi.
+- **Wake from away:** Wake also asks every other paired PC that answers to send the magic packet on its own network (host 0.6 or later). Over WireGuard from outside, a PC at home that's already on can wake another one.
+
 ## 0.3
 
 - **Sign in with PIN** (not yet tested on a device): when a PC is on but nobody is signed in, a **Sign in with PIN** button opens a numpad. The PIN goes once to the host's optional Spout Sign-In service (Windows, host 0.5), which types it at the sign-in screen. It is never stored.
