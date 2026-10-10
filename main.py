@@ -15,7 +15,7 @@ import uuid
 import decky
 
 import steamcfg
-from wol import is_port_open, normalize_mac, probe_state, send_magic_packet, wait_until_ready
+from wol import is_port_open, normalize_mac, probe_state, send_magic_packet
 
 HOST_API_PORT = 47995
 # Steam (27036) and Spout Host only listen once someone is signed in; RDP and SMB answer at the sign-in screen too.
@@ -81,7 +81,7 @@ class Plugin:
         decky.logger.info(f"Sent magic packet to {host['name']} ({host['mac']})")
         if not host["address"]:
             return {"ok": True, "state": None}
-        state = await asyncio.to_thread(wait_until_ready, host["address"], READY_PORTS, ON_PORTS, 90)
+        state = await asyncio.to_thread(self._wait_for_host, host, 90, True)
         return {"ok": True, "state": state}
 
     def _host_request(self, host: dict, method: str, body: dict | None = None, path: str = "/api/config") -> dict:
@@ -283,6 +283,43 @@ class Plugin:
         self._pairing = None
         return True
 
+    def _at_sign_in(self, host: dict):
+        """Ask Spout Sign-In whether the PC is locked or nobody is signed in; None if it can't tell."""
+        if not host.get("token"):
+            return None
+        req = urllib.request.Request(f"http://{host['address']}:{SIGNIN_PORT}/api/signin",
+                                     headers={"Authorization": f"Bearer {host['token']}"})
+        try:
+            with urllib.request.urlopen(req, timeout=2) as r:
+                v = json.load(r).get("signInScreen")
+                return v if isinstance(v, bool) else None
+        except (urllib.error.URLError, OSError, ValueError):
+            return None
+
+    def _host_state(self, host: dict) -> str:
+        """"ready" to stream, "on" (at the sign-in screen or locked) or "off"."""
+        state = probe_state(host["address"], READY_PORTS, ON_PORTS)
+        if state != "off" and self._at_sign_in(host):
+            return "on"
+        return state
+
+    def _wait_for_host(self, host: dict, timeout: float, stop_at_sign_in: bool) -> str:
+        """Wait until the PC is ready, or (after Wake) until Spout Sign-In says it waits for a PIN."""
+        deadline = time.monotonic() + timeout
+        state = "off"
+        while time.monotonic() < deadline:
+            state = probe_state(host["address"], READY_PORTS, ON_PORTS, 1.0)
+            if state != "off":
+                at_sign_in = self._at_sign_in(host)
+                if at_sign_in:
+                    state = "on"
+                    if stop_at_sign_in:
+                        break
+                elif state == "ready":
+                    break
+            time.sleep(2)
+        return state
+
     async def sign_in(self, host_id: str, pin: str) -> dict:
         """Send the PIN to the PC's Spout Sign-In service once. It is never stored or logged."""
         host = next((h for h in self._load() if h["id"] == host_id), None)
@@ -316,14 +353,14 @@ class Plugin:
             decky.logger.info(f"sign-in on {host['name']} failed: {err}")
             return {"ok": False, "error": err}
         decky.logger.info(f"sign-in PIN sent to {host['name']}")
-        state = await asyncio.to_thread(wait_until_ready, host["address"], READY_PORTS, ON_PORTS, 60)
+        state = await asyncio.to_thread(self._wait_for_host, host, 60, False)
         return {"ok": True, "state": state}
 
     async def host_status(self, host_id: str) -> str:
         host = next((h for h in self._load() if h["id"] == host_id), None)
         if not host or not host["address"]:
             return "off"
-        return await asyncio.to_thread(probe_state, host["address"], READY_PORTS, ON_PORTS)
+        return await asyncio.to_thread(self._host_state, host)
 
     def _send_session(self, host: dict, state: str) -> bool:
         req = urllib.request.Request(

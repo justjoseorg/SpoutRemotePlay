@@ -6,6 +6,7 @@ Minor releases (`X.Y.0`) get a written entry here, which becomes their release n
 
 - **Sign in with PIN** (not yet tested on a device): when a PC is on but nobody is signed in, a **Sign in with PIN** button opens a numpad. The PIN goes once to the host's optional Spout Sign-In service (Windows, host 0.5), which types it at the sign-in screen. It is never stored.
 - **The PC's status tells "online" from "not signed in".** The online check used to count Windows file sharing and Remote Desktop, which answer at the sign-in screen too, so a PC that Steam couldn't stream from yet showed as online. Now only Steam or the host count as online, and Wake waits for them.
+- **A locked PC shows "not signed in"** when the host has Spout Sign-In 0.5.1 or later, so the numpad also works after Win+L. *(0.3.1)*
 
 ## 0.2
 
