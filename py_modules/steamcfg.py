@@ -8,6 +8,8 @@ import aiohttp
 CEF_URL = "http://127.0.0.1:8080"
 
 # CStreamingClientConfig field numbers (SteamDatabase/Protobufs steammessages_remoteplay.proto).
+FIELD_FPS_NUM = 4
+FIELD_FPS_DEN = 5
 FIELD_HW_DECODE = 7
 FIELD_HEVC = 13
 FIELD_AV1 = 26
@@ -68,20 +70,35 @@ def parse_fields(data: bytes) -> list:
     return fields
 
 
-def get_bools(data: bytes) -> dict:
-    out = dict(DEFAULTS)
+def _varints(data: bytes) -> dict:
+    out = {}
     for num, wt, raw in parse_fields(data):
-        for name, fnum in BOOL_FIELDS.items():
-            if num == fnum and wt == 0:
-                out[name] = bool(_read_varint(raw, _read_varint(raw, 0)[1])[0])
+        if wt == 0:
+            out[num] = _read_varint(raw, _read_varint(raw, 0)[1])[0]
+    return out
+
+
+def get_bools(data: bytes) -> dict:
+    v = _varints(data)
+    out = dict(DEFAULTS)
+    for name, fnum in BOOL_FIELDS.items():
+        if fnum in v:
+            out[name] = bool(v[fnum])
+    num, den = v.get(FIELD_FPS_NUM, 0), v.get(FIELD_FPS_DEN, 0)
+    # Steam stores the frame rate limit as a fraction; 0/0 means Automatic.
+    out["fps"] = round(num / den) if num and den else 0
     return out
 
 
 def set_bools(data: bytes, values: dict) -> bytes:
-    wanted = {BOOL_FIELDS[k]: bool(v) for k, v in values.items() if k in BOOL_FIELDS}
+    wanted = {BOOL_FIELDS[k]: 1 if v else 0 for k, v in values.items() if k in BOOL_FIELDS}
+    if "fps" in values:
+        fps = max(0, int(values["fps"]))
+        wanted[FIELD_FPS_NUM] = fps
+        wanted[FIELD_FPS_DEN] = 1 if fps else 0
     kept = [raw for num, _, raw in parse_fields(data) if num not in wanted]
     for fnum, v in wanted.items():
-        kept.append(_write_varint(fnum << 3) + _write_varint(1 if v else 0))
+        kept.append(_write_varint(fnum << 3) + _write_varint(v))
     return b"".join(kept)
 
 
