@@ -13,7 +13,7 @@ import {
   staticClasses,
 } from "@decky/ui";
 import { callable, definePlugin, toaster } from "@decky/api";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Host {
   id: string;
@@ -660,6 +660,7 @@ function Content() {
   const [tab, setTab] = useState<TabId>("pcs");
   const [more, setMore] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const tabBar = useRef<HTMLDivElement>(null);
 
   const refresh = () => getHosts().then(setHosts);
   useEffect(() => {
@@ -693,7 +694,14 @@ function Content() {
 
   const shift = (d: number) => {
     const i = TABS.findIndex((t) => t.id === tab);
-    setTab(TABS[(i + d + TABS.length) % TABS.length].id);
+    const n = (i + d + TABS.length) % TABS.length;
+    setTab(TABS[n].id);
+    // The focused control may belong to the old tab and disappear, which sends
+    // focus to the header's back button; move it to the new tab's button instead.
+    setTimeout(() => {
+      const btn = tabBar.current?.querySelectorAll<HTMLElement>("[data-spout-tab]")[n];
+      btn?.focus();
+    }, 0);
   };
   const onButtonDown = (e: CustomEvent<{ button: number }>) => {
     if (e.detail.button === GamepadButton.BUMPER_LEFT) shift(-1);
@@ -702,10 +710,12 @@ function Content() {
 
   return (
     <Focusable onButtonDown={onButtonDown}>
-      <Focusable style={{ display: "flex", gap: "6px", padding: "0 16px 8px" }}>
+      <Focusable ref={tabBar} style={{ display: "flex", gap: "6px", padding: "0 16px 8px" }}>
         {TABS.map((t) => (
           <DialogButton
             key={t.id}
+            data-spout-tab={t.id}
+            preferredFocus={tab === t.id}
             onClick={() => setTab(t.id)}
             style={{
               flex: 1,
