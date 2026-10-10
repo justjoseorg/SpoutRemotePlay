@@ -73,12 +73,12 @@ Requires [Decky Loader](https://decky.xyz/). No native code, so it runs on both 
 | 🔐 **Pairing** with a PIN, and **per-device stream settings** (resolution, refresh) pushed to the host | Verified end to end against the real host on Linux. |
 | 📡 **Session signal:** Remote Play start/stop reported to your paired PCs | Verified on an AYN Odin 2 Portal streaming Celeste to a Linux PC: the host received both the start and the stop. |
 | 🖥️ **Virtual display on a real stream** | Windows (host 0.3, Steam client beta): verified with an AYN Odin 2 Portal. Steam's display was used, the other displays turned off during the stream and came back afterwards. Linux: verified with the same handheld; the host created a virtual display for the stream and removed it afterwards. |
-| ⏻ **Shut down** (host 0.7+) | Not yet run on a device. |
-| ⏰ **Wake-on-LAN** with an online check | Sent from the Portal; with WireGuard on it didn't reach the PC before 0.4. The relay through another paired PC was run from the Portal against a Linux host 0.6; the 0.4 local broadcast fix and waking from outside the home aren't tested yet. The check tells "online" (Steam or the host answers) from "not signed in" (only Windows answers); that check was run from the Portal against two signed-in PCs. |
-| 🔑 **Sign in with PIN** numpad for a PC at the Windows sign-in screen | Not yet tested on a device. |
+| ⏻ **Shut down** (host 0.7+) | Verified from an AYN Odin 2 Portal. |
+| ⏰ **Wake-on-LAN** with an online check | Sent from the Portal; with WireGuard on it didn't reach the PC before 0.4. Since 0.4, waking with WireGuard on and from outside the home (relayed through another paired PC) are verified from the Portal. The check tells "online" (Steam or the host answers) from "not signed in" (only Windows answers); that check was run from the Portal against two signed-in PCs. |
+| 🔑 **Sign in with PIN** numpad for a PC at the Windows sign-in screen | Verified from an AYN Odin 2 Portal on a Windows PC after power-on. |
 | 🧩 **Apps tab:** lists the programs the host added to its Steam library (read-only, via the paired token) | Untested on the Portal. |
 | 🌊 **Force PyroWave** on or off (Advanced), even when Steam greys out its toggle | On an AYN Odin 2 Portal: turning it off and on saves to Steam's streaming config. A stream with it off has not been run yet. |
-| 🎞️ **Stream frame rate and resolution limits** in Advanced, next to the decoder toggles; resolution options come from the device's screen | Not yet tested on a device. |
+| 🎞️ **Stream frame rate and resolution limits** in Advanced, next to the decoder toggles; resolution options come from the device's screen | Verified on an AYN Odin 2 Portal. |
 | 🔎 **Network scan**, **Steam client decoder toggles** (HEVC/AV1), tabbed UI with L1/R1 switching, Spout icon | Ran on the device earlier; the latest UI changes have not been visually confirmed. |
 
 If you have several paired PCs, the start/stop signal goes to all of them for now. A game that is still starting when the monitor switches can crash (seen with Celeste on Windows); connecting again works.
