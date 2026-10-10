@@ -2,6 +2,11 @@
 
 Minor releases (`X.Y.0`) get a written entry here, which becomes their release notes. Patch releases (`X.Y.Z`) are listed on the [Releases](https://github.com/justjoseorg/SpoutRemotePlay/releases) page with the change that produced them. Each entry covers everything since the previous minor release.
 
+## 0.3
+
+- **Sign in with PIN** (not yet tested on a device): when a PC is on but nobody is signed in, a **Sign in with PIN** button opens a numpad. The PIN goes once to the host's optional Spout Sign-In service (Windows, host 0.5), which types it at the sign-in screen. It is never stored.
+- **The PC's status tells "online" from "not signed in".** The online check used to count Windows file sharing and Remote Desktop, which answer at the sign-in screen too, so a PC that Steam couldn't stream from yet showed as online. Now only Steam or the host count as online, and Wake waits for them.
+
 ## 0.2
 
 - **PyroWave can be forced on or off** in the Advanced tab, even when Steam greys out its own PyroWave toggle (for example when the x86 streaming client runs under box64 on an ARM handheld). Turn it off before streaming over a slow connection such as a VPN, and back on at home. Steam picks the codec when a stream connects, so change it before starting. AV1 and HEVC stay greyed out when Steam reports no decoder.
