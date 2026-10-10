@@ -78,6 +78,7 @@ Requires [Decky Loader](https://decky.xyz/). No native code, so it runs on both 
 | 🔑 **Sign in with PIN** numpad for a PC at the Windows sign-in screen | Not yet tested on a device. |
 | 🧩 **Apps tab:** lists the programs the host added to its Steam library (read-only, via the paired token) | Untested on the Portal. |
 | 🌊 **Force PyroWave** on or off (Advanced), even when Steam greys out its toggle | On an AYN Odin 2 Portal: turning it off and on saves to Steam's streaming config. A stream with it off has not been run yet. |
+| 🎞️ **Stream frame rate limit** (Automatic, 30–144 FPS) in Advanced, next to the decoder toggles | Not yet tested on a device. |
 | 🔎 **Network scan**, **Steam client decoder toggles** (HEVC/AV1), tabbed UI with L1/R1 switching, Spout icon | Ran on the device earlier; the latest UI changes have not been visually confirmed. |
 
 If you have several paired PCs, the start/stop signal goes to all of them for now. A game that is still starting when the monitor switches can crash (seen with Celeste on Windows); connecting again works.

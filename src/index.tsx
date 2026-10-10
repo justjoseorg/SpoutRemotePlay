@@ -60,6 +60,7 @@ type Decoders = {
   hevc: boolean;
   av1: boolean;
   pyrowave: boolean;
+  fps: number;
 };
 type DecoderState = {
   ok: boolean;
@@ -113,6 +114,7 @@ const RESOLUTIONS = [
   "3840x2160",
 ];
 const REFRESH = [30, 60, 90, 120, 144, 165, 240];
+const FPS_LIMITS = [0, 30, 40, 45, 60, 72, 90, 120, 144];
 
 function DecoderSettings() {
   const [st, setSt] = useState<DecoderState | null>(null);
@@ -134,13 +136,24 @@ function DecoderSettings() {
     <>
       <PanelSectionRow>
         <ToggleField
-          label="Override client decoder settings"
+          label="Override client stream settings"
           checked={!!st.enabled}
           onChange={(v) => change({}, v)}
         />
       </PanelSectionRow>
       {st.enabled && (
         <>
+          <PanelSectionRow>
+            <DropdownItem
+              label="Frame rate limit"
+              rgOptions={(FPS_LIMITS.includes(d.fps) ? FPS_LIMITS : [...FPS_LIMITS, d.fps]).map((f) => ({
+                data: f,
+                label: f ? `${f} FPS` : "Automatic",
+              }))}
+              selectedOption={d.fps}
+              onChange={(o) => change({ fps: o.data as number })}
+            />
+          </PanelSectionRow>
           <PanelSectionRow>
             <ToggleField
               label="Hardware decoding"
@@ -821,7 +834,7 @@ function Content() {
               }}
             />
           ))}
-          <PanelSection title="Client decoders">
+          <PanelSection title="Client stream settings">
             <DecoderSettings />
           </PanelSection>
         </>
