@@ -388,6 +388,24 @@ class Plugin:
         state = await asyncio.to_thread(self._wait_for_host, host, 60, False)
         return {"ok": True, "state": state}
 
+    async def shutdown_host(self, host_id: str) -> dict:
+        """Ask the PC's host to shut it down (host 0.7 or later)."""
+        host = next((h for h in self._load() if h["id"] == host_id), None)
+        if not host or not host.get("address"):
+            return {"ok": False, "error": "Unknown host"}
+        if not host.get("token"):
+            return {"ok": False, "error": "Pair this PC first"}
+        try:
+            await asyncio.to_thread(self._host_request, host, "POST", {"action": "shutdown"}, "/api/power")
+        except ValueError as e:
+            msg = str(e)
+            if "replied 404" in msg or "replied 405" in msg:
+                msg = "Update Spout Remote Play Host on this PC to 0.7 or later"
+            decky.logger.info(f"shutdown of {host['name']} failed: {msg}")
+            return {"ok": False, "error": msg}
+        decky.logger.info(f"Shutdown sent to {host['name']}")
+        return {"ok": True}
+
     async def host_status(self, host_id: str) -> str:
         host = next((h for h in self._load() if h["id"] == host_id), None)
         if not host or not host["address"]:
