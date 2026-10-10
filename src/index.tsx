@@ -61,6 +61,7 @@ type Decoders = {
   av1: boolean;
   pyrowave: boolean;
   fps: number;
+  resolution: [number, number];
 };
 type DecoderState = {
   ok: boolean;
@@ -70,6 +71,7 @@ type DecoderState = {
   hevc_available?: boolean;
   av1_available?: boolean;
   pyrowave_available?: boolean;
+  display?: [number, number] | null;
 };
 const getDecoders = callable<[], DecoderState>("get_decoders");
 const setDecoders = callable<
@@ -132,6 +134,16 @@ function DecoderSettings() {
   const change = async (values: Partial<Decoders>, enabled = true) =>
     setSt(await setDecoders(values, enabled));
   const d = st.decoders;
+  const even = (n: number) => Math.round(n / 2) * 2;
+  // Native size of this device's screen, then smaller sizes with the same aspect ratio.
+  const resLimits = ["0x0"];
+  if (st.display)
+    for (const f of [1, 5 / 6, 3 / 4, 2 / 3, 1 / 2]) {
+      const r = `${even(st.display[0] * f)}x${even(st.display[1] * f)}`;
+      if (!resLimits.includes(r)) resLimits.push(r);
+    }
+  const curRes = d.resolution.join("x");
+  if (!resLimits.includes(curRes)) resLimits.push(curRes);
   return (
     <>
       <PanelSectionRow>
@@ -143,6 +155,19 @@ function DecoderSettings() {
       </PanelSectionRow>
       {st.enabled && (
         <>
+          <PanelSectionRow>
+            <DropdownItem
+              label="Resolution limit"
+              rgOptions={resLimits.map((r, i) => ({
+                data: r,
+                label: r === "0x0" ? "Automatic" : i === 1 && st.display ? `${r} (native)` : r,
+              }))}
+              selectedOption={curRes}
+              onChange={(o) =>
+                change({ resolution: (o.data as string).split("x").map(Number) as [number, number] })
+              }
+            />
+          </PanelSectionRow>
           <PanelSectionRow>
             <DropdownItem
               label="Frame rate limit"
