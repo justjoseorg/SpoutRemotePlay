@@ -8,6 +8,8 @@ import aiohttp
 CEF_URL = "http://127.0.0.1:8080"
 
 # CStreamingClientConfig field numbers (SteamDatabase/Protobufs steammessages_remoteplay.proto).
+FIELD_RES_X = 2
+FIELD_RES_Y = 3
 FIELD_FPS_NUM = 4
 FIELD_FPS_DEN = 5
 FIELD_HW_DECODE = 7
@@ -87,6 +89,8 @@ def get_bools(data: bytes) -> dict:
     num, den = v.get(FIELD_FPS_NUM, 0), v.get(FIELD_FPS_DEN, 0)
     # Steam stores the frame rate limit as a fraction; 0/0 means Automatic.
     out["fps"] = round(num / den) if num and den else 0
+    # 0x0 means Automatic.
+    out["resolution"] = [v.get(FIELD_RES_X, 0), v.get(FIELD_RES_Y, 0)]
     return out
 
 
@@ -96,6 +100,9 @@ def set_bools(data: bytes, values: dict) -> bytes:
         fps = max(0, int(values["fps"]))
         wanted[FIELD_FPS_NUM] = fps
         wanted[FIELD_FPS_DEN] = 1 if fps else 0
+    if "resolution" in values:
+        w, h = (max(0, int(x)) for x in values["resolution"])
+        wanted[FIELD_RES_X], wanted[FIELD_RES_Y] = (w, h) if w and h else (0, 0)
     kept = [raw for num, _, raw in parse_fields(data) if num not in wanted]
     for fnum, v in wanted.items():
         kept.append(_write_varint(fnum << 3) + _write_varint(v))

@@ -177,7 +177,7 @@ class Plugin:
         except Exception as e:
             return {"ok": False, "error": str(e)}
         st.pop("_config")
-        return {"ok": True, **st}
+        return {"ok": True, **st, "display": self._display_size()}
 
     async def set_decoders(self, values: dict, enabled: bool) -> dict:
         try:
@@ -185,7 +185,7 @@ class Plugin:
         except Exception as e:
             return {"ok": False, "error": str(e)}
         st.pop("_config")
-        return {"ok": True, **st}
+        return {"ok": True, **st, "display": self._display_size()}
 
     def _post_json(self, address: str, path: str, body: dict) -> dict:
         req = urllib.request.Request(
@@ -246,6 +246,13 @@ class Plugin:
             caps["av1"] = bool(st.get("av1_available"))
         except Exception as e:
             decky.logger.info(f"capabilities: Steam not reachable ({e})")
+        size = self._display_size()
+        if size:
+            caps["width"], caps["height"] = size
+        return caps
+
+    def _display_size(self):
+        """Preferred mode of the first connected display, landscape, or None."""
         try:
             for modes in sorted(glob.glob("/sys/class/drm/card*-*/modes")):
                 status = modes.replace("modes", "status")
@@ -253,11 +260,11 @@ class Plugin:
                     continue
                 first = open(modes).readline().strip().split("x")
                 if len(first) == 2:
-                    caps["width"], caps["height"] = int(first[0]), int(first[1])
-                    break
+                    w, h = int(first[0]), int("".join(c for c in first[1] if c.isdigit()))
+                    return (max(w, h), min(w, h))
         except (OSError, ValueError):
             pass
-        return caps
+        return None
 
     async def start_pairing(self, address: str) -> dict:
         """Ask the PC to pair. The PIN is shown here and typed into the host UI on the PC."""
