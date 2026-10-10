@@ -149,13 +149,9 @@ function DecoderSettings() {
           </PanelSectionRow>
           <PanelSectionRow>
             <ToggleField
-              label={st.av1_available ? "AV1" : "AV1 (force)"}
-              description={
-                st.av1_available
-                  ? undefined
-                  : "Steam reports no AV1 decoder; forcing it may fail or fall back."
-              }
+              label="AV1"
               checked={d.av1}
+              disabled={!st.av1_available}
               onChange={(v) => change({ av1: v })}
             />
           </PanelSectionRow>
