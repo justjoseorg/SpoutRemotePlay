@@ -73,16 +73,48 @@ class Plugin:
             return {"ok": False, "error": "Unknown host"}
         if not host["mac"]:
             return {"ok": False, "error": "This PC's MAC address is unknown; add it manually"}
+        error = None
         try:
             await asyncio.to_thread(send_magic_packet, host["mac"], host["broadcast"])
+            decky.logger.info(f"Sent magic packet to {host['name']} ({host['mac']})")
         except OSError as e:
             decky.logger.error(f"WoL send failed: {e}")
-            return {"ok": False, "error": str(e)}
-        decky.logger.info(f"Sent magic packet to {host['name']} ({host['mac']})")
+            error = str(e)
+        relays = await asyncio.to_thread(self._relay_wake, host)
+        if relays:
+            decky.logger.info(f"Wake for {host['name']} relayed by {', '.join(relays)}")
+        elif error:
+            return {"ok": False, "error": error}
         if not host["address"]:
             return {"ok": True, "state": None}
         state = await asyncio.to_thread(self._wait_for_host, host, 90, True)
         return {"ok": True, "state": state}
+
+    def _relay_wake(self, target: dict) -> list:
+        """Ask every other paired PC that answers to send the magic packet on its own network.
+
+        Broadcasts don't cross a VPN such as WireGuard, so away from home only a
+        PC that's already on at home can wake another one. Hosts older than 0.6
+        answer 404 and are skipped.
+        """
+        others = [h for h in self._load()
+                  if h["id"] != target["id"] and h.get("address") and h.get("token")]
+        body = json.dumps({"mac": target["mac"]}).encode()
+
+        def ask(h):
+            req = urllib.request.Request(
+                f"http://{h['address']}:{HOST_API_PORT}/api/wake", data=body, method="POST",
+                headers={"Content-Type": "application/json", "Authorization": "Bearer " + h["token"]})
+            try:
+                with urllib.request.urlopen(req, timeout=2):
+                    return h["name"]
+            except (urllib.error.URLError, OSError, ValueError):
+                return None
+
+        if not others:
+            return []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(8, len(others))) as pool:
+            return [n for n in pool.map(ask, others) if n]
 
     def _host_request(self, host: dict, method: str, body: dict | None = None, path: str = "/api/config") -> dict:
         if not host.get("address"):
