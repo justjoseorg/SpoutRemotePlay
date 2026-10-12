@@ -110,9 +110,9 @@ Everything below was tested on an **AYN Odin 2 Portal** unless noted.
 | ⏰ **Wake-on-LAN** with an online check | Works, including over WireGuard and from outside the home (host 0.4+). The check tells "online" from "not signed in". |
 | 🔑 **Sign in with PIN** at the Windows sign-in screen | Works on a Windows PC after power-on. |
 | 🧩 **Apps tab:** lists programs the host added to its Steam library | Not tested on the Portal yet. |
-| 🌊 **Force PyroWave** on or off (Advanced) | The setting saves to Steam's config. A stream with it off hasn't been tried yet. |
+| Works. Turning it off and on saves to Steam's config, and a stream with it off runs. |
 | 🎞️ **Frame rate and resolution limits** (Advanced) | Works. |
-| 🔎 **Network scan**, **decoder toggles** (HEVC/AV1), tabbed UI with L1/R1 switching | Ran earlier. The newest UI changes haven't been checked by eye. |
+| 🔎 **Network scan**, **decoder toggles** (HEVC/AV1), tabbed UI with L1/R1 switching | Works. |
 
 ## 🛟 Good to know
 
