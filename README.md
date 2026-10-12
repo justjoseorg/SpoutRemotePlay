@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Pick up your handheld, press play on a game from your PC, and go.</b><br>
-  A Decky plugin for Steam's native Remote Play: wake your PC, and stream on a virtual display matching your handheld with your other displays off.
+  A Decky plugin for Steam's built-in Remote Play. It wakes your PC and streams to a virtual display that fits your handheld, with your other screens off.
 </p>
 
 <p align="center">
@@ -22,82 +22,118 @@
   <a href="https://github.com/justjoseorg/SpoutRemotePlay/releases/latest"><b>⬇️ Download the plugin</b></a>
   &nbsp;·&nbsp;
   <a href="https://github.com/justjoseorg/SpoutRemotePlayHost/releases/latest"><b>🖥️ Download the PC host</b></a>
-    &nbsp;·&nbsp;
-    <a href="CHANGELOG.md">📝 Changelog</a>
-  </p>
+  &nbsp;·&nbsp;
+  <a href="CHANGELOG.md">📝 Changelog</a>
+</p>
 
 ---
 
 ## Contents
 
-- [💡 The idea](#-the-idea)
-- [🚀 How it works](#-how-it-works)
-- [📥 Install](#-install)
+- [💡 What is this?](#-what-is-this)
+- [🧰 What you need](#-what-you-need)
+- [📥 Install, step by step](#-install-step-by-step)
+- [🚀 Using it](#-using-it)
 - [✅ What works today](#-what-works-today)
-- [🔧 Build](#-build)
+- [🛟 Good to know](#-good-to-know)
+- [🔧 Build it yourself](#-build-it-yourself)
 - [🙏 Credits](#-credits)
 
-## 💡 The idea
+## 💡 What is this?
 
-This is deliberately *not* another streaming stack. Steam's native Remote Play already streams well, and I want to keep using it as-is: same Steam UI, same Steam Link experience, no separate client to learn.
+SpoutRemotePlay is **not** a new streaming app. Steam's own Remote Play already streams well, so this plugin keeps using it. You get the same Steam menus and the same Steam Link, with nothing new to learn.
 
-The one thing it lacks is keeping the stream off your desk: your PC's real displays get hijacked or stay lit while you play on the handheld. Tools like ArtMoon/ArtLight (built on Moonlight) solve that for their own streaming protocol. SpoutRemotePlay brings that piece to **native Steam Remote Play**, as an integrated part of Steam rather than a replacement for it: wake the PC from the handheld, and while you stream, the game runs on a virtual display matching your handheld with your other displays off.
+What Steam doesn't do well is leave your desk alone. While you play on the handheld, your PC's real monitors can get taken over or stay lit. This plugin fixes that. It works with a small app on your PC (the **host**) to:
 
-On Windows, Steam's client beta now creates that virtual display itself, so the host's job there is to switch your other displays off and bring them back afterwards. On Linux, where Steam doesn't, the host creates the display too.
+- wake your PC from the handheld,
+- make a virtual display that matches your handheld's screen,
+- turn your other monitors off while you stream, and
+- turn everything back on when you stop.
 
-> **Why "Spout"?** It's a play on **Valve**: a valve controls the flow of steam, and a spout is where the steam comes out. Valve's Steam does the streaming; Spout just makes sure the stream pours onto a display shaped for your handheld.
+The plugin is one half of a pair. The other half is the **[SpoutRemotePlay Host](https://github.com/justjoseorg/SpoutRemotePlayHost)** for your PC (Windows or Linux, x86_64). You need both.
 
-## 🚀 How it works
+> **Why "Spout"?** It's a play on **Valve**. A valve controls the flow of steam, and a spout is where the steam comes out. Steam does the streaming. Spout makes sure it pours onto a display shaped for your handheld.
 
-| Step | |
+## 🧰 What you need
+
+- A handheld running SteamOS (or similar) with [Decky Loader](https://decky.xyz/). ARM and x86 both work.
+- A PC on the same network (or reachable by VPN) with Steam signed in.
+- The [SpoutRemotePlay Host](https://github.com/justjoseorg/SpoutRemotePlayHost) installed on that PC.
+
+## 📥 Install, step by step
+
+### Step 1: Install the host on your PC
+
+Follow the install steps in the [host README](https://github.com/justjoseorg/SpoutRemotePlayHost#-install-step-by-step), or grab the installer from the [latest host release](https://github.com/justjoseorg/SpoutRemotePlayHost/releases/latest).
+
+### Step 2: Install the plugin on your handheld
+
+> **Decky Plugin Store:** the plugin has been submitted to the store in [decky-plugin-database PR #1146](https://github.com/SteamDeckHomebrew/decky-plugin-database/pull/1146), which is still open. **Once it is merged, SpoutRemotePlay will be available to install straight from the Decky store.** Until then, use the ZIP method below.
+
+**Install from a ZIP file (works today):**
+
+1. On the handheld, download `SpoutRemotePlay-vX.Y.Z.zip` from the [latest release](https://github.com/justjoseorg/SpoutRemotePlay/releases/latest).
+2. Open Decky (the **...** button) and go to **Settings → General**. Turn on **Developer mode**.
+3. A new **Developer** tab appears. Open it and choose **Install Plugin from ZIP File**.
+4. Pick the ZIP you downloaded. Decky installs the plugin and reloads.
+5. Open Decky again. You should see **SpoutRemotePlay** in the list.
+
+### Step 3: Pair the two
+
+1. Open the plugin and enter your PC's IP address (or use **Network scan**).
+2. A 4-digit PIN shows on the handheld, and the PC shows a notification.
+3. Type the PIN into the host's web page on the PC. You only do this once.
+
+## 🚀 Using it
+
+| Step | What happens |
 |---|---|
-| 1️⃣ **Wake the PC** | Open the plugin, tap your PC, and it sends Wake-on-LAN and waits until Steam is up. If the PC is on but nobody is signed in (Windows), tap **Sign in with PIN** and type your Windows PIN on the numpad. This needs the host's optional [Spout Sign-In](https://github.com/justjoseorg/SpoutRemotePlayHost#-sign-in-after-wake-on-lan-windows); the PIN is sent once and never stored. Away from home over a VPN such as WireGuard, another paired PC at home that's on (host 0.6+) relays the wake. |
-| 2️⃣ **Pair once** | Enter the PC's IP, type the 4-digit PIN shown on the PC, and you're done. The plugin also learns the PC's MAC address and tells the host what your device can decode (HEVC/AV1) and its screen size. |
-| 3️⃣ **Press play in Steam** | As usual. The plugin notices Steam's Remote Play session and tells the PC you're streaming from (and only that one). On Windows, Steam creates a virtual display for your device and the host turns your other displays off; on Linux, the host creates the virtual display with your device's resolution and refresh rate. When you quit, everything goes back. |
+| 1️⃣ **Wake the PC** | Tap your PC in the plugin. It sends Wake-on-LAN and waits until Steam is up. |
+| 2️⃣ **Sign in (Windows, optional)** | If the PC is on but nobody is signed in, tap **Sign in with PIN** and type your Windows PIN on the numpad. This needs the host's optional [Spout Sign-In](https://github.com/justjoseorg/SpoutRemotePlayHost#-sign-in-after-wake-on-lan-windows). Your PIN is sent once and never stored. |
+| 3️⃣ **Press play in Steam** | Do it like normal. The plugin sees the Remote Play session and tells your PC. On Windows, Steam makes the virtual display and the host turns your other displays off. On Linux, the host makes the virtual display using your handheld's resolution and refresh rate. |
+| 4️⃣ **Quit** | Everything goes back the way it was. |
 
-The plugin is one half of a pair. The other half is the **[host app on your PC](https://github.com/justjoseorg/SpoutRemotePlayHost)** (Windows and Linux, x86_64).
+Away from home on a VPN such as WireGuard? Another paired PC at home that is turned on (host 0.6 or newer) can pass the wake signal along for you.
 
-There is no codec setting: Steam picks the codec during negotiation.
-
-## 📥 Install
-
-1. **On the PC:** install the host from its [latest release](https://github.com/justjoseorg/SpoutRemotePlayHost/releases/latest).
-2. **On the handheld:** download `SpoutRemotePlay-vX.Y.Z.zip` from this repo's [latest release](https://github.com/justjoseorg/SpoutRemotePlay/releases/latest). In Decky's settings, turn on **Developer mode**, then use **Developer → Install Plugin from ZIP File**.
-
-Requires [Decky Loader](https://decky.xyz/). No native code, so it runs on both ARM and x86 SteamOS devices.
+There is no codec setting. Steam picks the codec on its own.
 
 ## ✅ What works today
 
+Everything below was tested on an **AYN Odin 2 Portal** unless noted.
+
 | Feature | Status |
 |---|---|
-| 🔐 **Pairing** with a PIN, and **per-device stream settings** (resolution, refresh) pushed to the host | Verified end to end against the real host on Linux. |
-| 📡 **Session signal:** Remote Play start/stop reported to your paired PCs | Verified on an AYN Odin 2 Portal streaming Celeste to a Linux PC: the host received both the start and the stop. |
-| 🖥️ **Virtual display on a real stream** | Windows (host 0.3, Steam client beta): verified with an AYN Odin 2 Portal. Steam's display was used, the other displays turned off during the stream and came back afterwards. Linux: verified with the same handheld; the host created a virtual display for the stream and removed it afterwards. |
-| ⏻ **Shut down** (host 0.7+) | Verified from an AYN Odin 2 Portal. |
-| ⏰ **Wake-on-LAN** with an online check | Sent from the Portal; with WireGuard on it didn't reach the PC before 0.4. Since 0.4, waking with WireGuard on and from outside the home (relayed through another paired PC) are verified from the Portal. The check tells "online" (Steam or the host answers) from "not signed in" (only Windows answers); that check was run from the Portal against two signed-in PCs. |
-| 🔑 **Sign in with PIN** numpad for a PC at the Windows sign-in screen | Verified from an AYN Odin 2 Portal on a Windows PC after power-on. |
-| 🧩 **Apps tab:** lists the programs the host added to its Steam library (read-only, via the paired token) | Untested on the Portal. |
-| 🌊 **Force PyroWave** on or off (Advanced), even when Steam greys out its toggle | On an AYN Odin 2 Portal: turning it off and on saves to Steam's streaming config. A stream with it off has not been run yet. |
-| 🎞️ **Stream frame rate and resolution limits** in Advanced, next to the decoder toggles; resolution options come from the device's screen | Verified on an AYN Odin 2 Portal. |
-| 🔎 **Network scan**, **Steam client decoder toggles** (HEVC/AV1), tabbed UI with L1/R1 switching, Spout icon | Ran on the device earlier; the latest UI changes have not been visually confirmed. |
+| 🔐 **Pairing** with a PIN, plus per-device stream settings (resolution, refresh) | Works end to end with the real host on Linux. |
+| 📡 **Session signal:** Remote Play start and stop are sent to your paired PCs | Works. Tested streaming Celeste to a Linux PC. |
+| 🖥️ **Virtual display** | Windows (host 0.3 and the Steam client beta): works. Other displays turned off and came back. Linux: works. The host made and removed the display. |
+| ⏻ **Shut down the PC** (host 0.7+) | Works. |
+| ⏰ **Wake-on-LAN** with an online check | Works, including over WireGuard and from outside the home (host 0.4+). The check tells "online" from "not signed in". |
+| 🔑 **Sign in with PIN** at the Windows sign-in screen | Works on a Windows PC after power-on. |
+| 🧩 **Apps tab:** lists programs the host added to its Steam library | Not tested on the Portal yet. |
+| 🌊 **Force PyroWave** on or off (Advanced) | The setting saves to Steam's config. A stream with it off hasn't been tried yet. |
+| 🎞️ **Frame rate and resolution limits** (Advanced) | Works. |
+| 🔎 **Network scan**, **decoder toggles** (HEVC/AV1), tabbed UI with L1/R1 switching | Ran earlier. The newest UI changes haven't been checked by eye. |
 
-If you have several paired PCs, the start/stop signal goes to all of them for now. A game that is still starting when the monitor switches can crash (seen with Celeste on Windows); connecting again works.
+## 🛟 Good to know
 
-## 🔧 Build
+- With several paired PCs, the start/stop signal goes to all of them for now.
+- A game that is still starting when the monitor switches can crash (seen with Celeste on Windows). Connecting again fixes it.
+
+## 🔧 Build it yourself
 
 ```bash
 pnpm i && pnpm build   # outputs dist/
 ```
 
-Copy the folder to `~/homebrew/plugins/SpoutRemotePlay` on the device (with `dist/`, `main.py`, `py_modules/`, `plugin.json`, `package.json`).
+Copy the folder to `~/homebrew/plugins/SpoutRemotePlay` on the device. Include `dist/`, `main.py`, `py_modules/`, `plugin.json` and `package.json`.
 
 ## 🙏 Credits
 
-This project is based on the ideas and work of others, and I'm grateful to them:
+This project builds on the ideas and work of others, and I'm grateful to them:
 
 - [Moonlight](https://moonlight-stream.org/) – the open-source game streaming client that started it all.
 - [StreamLight](https://github.com/FoggyBytes/StreamLight) – a Moonlight fork with deeper host integration.
-- [ArtMoon](https://github.com/onaiaku/ArtMoon) and [ArtLight](https://github.com/onaiaku/ArtLight) – the gamepad-first client and its one-installer host, whose wake/pair/virtual-monitor flow this is modeled on.
+- [ArtMoon](https://github.com/onaiaku/ArtMoon) and [ArtLight](https://github.com/onaiaku/ArtLight) – the gamepad-first client and its one-installer host, whose wake, pair and virtual-monitor flow this is modeled on.
 
 SpoutRemotePlay is an independent project and is not affiliated with any of them or with Valve.
 
