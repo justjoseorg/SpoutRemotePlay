@@ -90,7 +90,7 @@ Follow the install steps in the [host README](https://github.com/justjoseorg/Spo
 |---|---|
 | 1️⃣ **Wake the PC** | Tap your PC in the plugin. It sends Wake-on-LAN and waits until Steam is up. |
 | 2️⃣ **Sign in (Windows, optional)** | If the PC is on but nobody is signed in, tap **Sign in with PIN** and type your Windows PIN on the numpad. This needs the host's optional [Spout Sign-In](https://github.com/justjoseorg/SpoutRemotePlayHost#-sign-in-after-wake-on-lan-windows). Your PIN is sent once and never stored. |
-| 3️⃣ **Press play in Steam** | Do it like normal. The plugin sees the Remote Play session and tells your PC. On Windows, Steam makes the virtual display and the host turns your other displays off. On Linux, the host makes the virtual display using your handheld's resolution and refresh rate. |
+| 3️⃣ **Press play in Steam** | Do it like normal. The plugin sees the Remote Play session and tells the PC you're streaming from (and only that one). On Windows, Steam makes the virtual display and the host turns your other displays off. On Linux, the host makes the virtual display using your handheld's resolution and refresh rate. |
 | 4️⃣ **Quit** | Everything goes back the way it was. |
 
 Away from home on a VPN such as WireGuard? Another paired PC at home that is turned on (host 0.6 or newer) can pass the wake signal along for you.
@@ -116,7 +116,6 @@ Everything below was tested on an **AYN Odin 2 Portal** unless noted.
 
 ## 🛟 Good to know
 
-- With several paired PCs, the start/stop signal goes to all of them for now.
 - A game that is still starting when the monitor switches can crash (seen with Celeste on Windows). Connecting again fixes it.
 
 ## 🔧 Build it yourself
