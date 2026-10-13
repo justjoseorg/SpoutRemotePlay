@@ -910,8 +910,8 @@ function watchRemotePlay(): () => void {
 export default definePlugin(() => {
   const stopWatching = watchRemotePlay();
   return {
-    name: "SpoutRemotePlay",
-    titleView: <div className={staticClasses.Title}>SpoutRemotePlay</div>,
+    name: "Spout",
+    titleView: <div className={staticClasses.Title}>Spout</div>,
     content: <Content />,
     icon: <SpoutIcon />,
     onDismount() {
