@@ -487,8 +487,8 @@ function HostRow({ host }: { host: Host }) {
 
   return (
     <>
-      {/* A sleeping or powered-off PC answers nothing, so "off" is the only state that needs a wake. */}
-      {!host.address || state === "off" ? (
+      {/* Wake is available until the PC is seen awake, so you never wait for the status check. */}
+      {state !== "on" && state !== "ready" ? (
         <PanelSectionRow>
           <ButtonItem
             layout="below"
@@ -501,7 +501,7 @@ function HostRow({ host }: { host: Host }) {
         </PanelSectionRow>
       ) : (
         <PanelSectionRow>
-          {state ? `${host.name}${status}` : `Checking ${host.name}…`}
+          {`${host.name}${status}`}
         </PanelSectionRow>
       )}
       {state === "on" && host.token && (
