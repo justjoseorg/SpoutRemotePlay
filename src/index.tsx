@@ -104,7 +104,10 @@ const signIn = callable<
   { ok: boolean; state?: HostState; error?: string }
 >("sign_in");
 
-const shutdownHost = callable<[hostId: string], { ok: boolean; error?: string }>("shutdown_host");
+const shutdownHost = callable<
+  [hostId: string],
+  { ok: boolean; error?: string }
+>("shutdown_host");
 
 const RESOLUTIONS = [
   "1280x720",
@@ -160,18 +163,31 @@ function DecoderSettings() {
               label="Resolution limit"
               rgOptions={resLimits.map((r, i) => ({
                 data: r,
-                label: r === "0x0" ? "Automatic" : i === 1 && st.display ? `${r} (native)` : r,
+                label:
+                  r === "0x0"
+                    ? "Automatic"
+                    : i === 1 && st.display
+                      ? `${r} (native)`
+                      : r,
               }))}
               selectedOption={curRes}
               onChange={(o) =>
-                change({ resolution: (o.data as string).split("x").map(Number) as [number, number] })
+                change({
+                  resolution: (o.data as string).split("x").map(Number) as [
+                    number,
+                    number,
+                  ],
+                })
               }
             />
           </PanelSectionRow>
           <PanelSectionRow>
             <DropdownItem
               label="Frame rate limit"
-              rgOptions={(FPS_LIMITS.includes(d.fps) ? FPS_LIMITS : [...FPS_LIMITS, d.fps]).map((f) => ({
+              rgOptions={(FPS_LIMITS.includes(d.fps)
+                ? FPS_LIMITS
+                : [...FPS_LIMITS, d.fps]
+              ).map((f) => ({
                 data: f,
                 label: f ? `${f} FPS` : "Automatic",
               }))}
@@ -349,11 +365,23 @@ function PinPad({
   };
   return (
     <PanelSectionRow>
-      <div style={{ textAlign: "center", fontSize: "20px", letterSpacing: "6px", minHeight: "28px" }}>
+      <div
+        style={{
+          textAlign: "center",
+          fontSize: "20px",
+          letterSpacing: "6px",
+          minHeight: "28px",
+        }}
+      >
         {busy ? "Signing in…" : "•".repeat(pin.length) || "Windows PIN"}
       </div>
       <Focusable
-        style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", marginTop: "6px" }}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "6px",
+          marginTop: "6px",
+        }}
       >
         {PAD_KEYS.map((k) => (
           <DialogButton
@@ -381,7 +409,10 @@ function HostRow({ host }: { host: Host }) {
     const res = await signIn(host.id, pin);
     setSigningIn(false);
     if (!res.ok) {
-      toaster.toast({ title: "Sign-in failed", body: res.error ?? "Unknown error" });
+      toaster.toast({
+        title: "Sign-in failed",
+        body: res.error ?? "Unknown error",
+      });
       return;
     }
     setPadOpen(false);
@@ -395,9 +426,21 @@ function HostRow({ host }: { host: Host }) {
     });
   };
 
+  // Keep the status fresh so the wake button appears when the PC goes to sleep or off.
   useEffect(() => {
-    if (host.address) hostStatus(host.id).then(setState);
-  }, [host.id]);
+    if (!host.address) return;
+    let stopped = false;
+    const poll = () =>
+      hostStatus(host.id).then((r) => {
+        if (!stopped) setState(r);
+      });
+    poll();
+    const t = setInterval(poll, 5000);
+    return () => {
+      stopped = true;
+      clearInterval(t);
+    };
+  }, [host.id, host.address]);
 
   const wake = async () => {
     setBusy(true);
@@ -427,7 +470,10 @@ function HostRow({ host }: { host: Host }) {
         onOK={async () => {
           const res = await shutdownHost(host.id);
           if (!res.ok) {
-            toaster.toast({ title: "Shut down failed", body: res.error ?? "Unknown error" });
+            toaster.toast({
+              title: "Shut down failed",
+              body: res.error ?? "Unknown error",
+            });
             return;
           }
           setPadOpen(false);
@@ -441,16 +487,23 @@ function HostRow({ host }: { host: Host }) {
 
   return (
     <>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          disabled={busy}
-          onClick={wake}
-          description={host.mac}
-        >
-          {busy ? "Waking…" : `Wake ${host.name}${status}`}
-        </ButtonItem>
-      </PanelSectionRow>
+      {/* A sleeping or powered-off PC answers nothing, so "off" is the only state that needs a wake. */}
+      {!host.address || state === "off" ? (
+        <PanelSectionRow>
+          <ButtonItem
+            layout="below"
+            disabled={busy}
+            onClick={wake}
+            description={host.mac}
+          >
+            {busy ? "Waking…" : `Wake ${host.name}${status}`}
+          </ButtonItem>
+        </PanelSectionRow>
+      ) : (
+        <PanelSectionRow>
+          {state ? `${host.name}${status}` : `Checking ${host.name}…`}
+        </PanelSectionRow>
+      )}
       {state === "on" && host.token && (
         <PanelSectionRow>
           <ButtonItem layout="below" onClick={() => setPadOpen((o) => !o)}>
@@ -458,7 +511,9 @@ function HostRow({ host }: { host: Host }) {
           </ButtonItem>
         </PanelSectionRow>
       )}
-      {state === "on" && padOpen && <PinPad busy={signingIn} onSubmit={submitPin} />}
+      {state === "on" && padOpen && (
+        <PinPad busy={signingIn} onSubmit={submitPin} />
+      )}
       {state === "ready" && host.token && (
         <PanelSectionRow>
           <ButtonItem layout="below" onClick={shutdown}>
@@ -655,7 +710,8 @@ function HostApps({ host }: { host: Host }) {
       return;
     }
     setApps(r.apps ?? []);
-    if (r.steam && !r.steam.ready) setMsg("Host Steam integration is not ready");
+    if (r.steam && !r.steam.ready)
+      setMsg("Host Steam integration is not ready");
   };
   useEffect(() => {
     sync();
@@ -667,7 +723,9 @@ function HostApps({ host }: { host: Host }) {
           {busy ? "Syncing…" : "Sync apps"}
         </ButtonItem>
       </PanelSectionRow>
-      {apps?.length === 0 && <PanelSectionRow>No apps on this PC yet.</PanelSectionRow>}
+      {apps?.length === 0 && (
+        <PanelSectionRow>No apps on this PC yet.</PanelSectionRow>
+      )}
       {apps?.map((a) => (
         <PanelSectionRow key={a.id}>
           {a.name}
@@ -679,12 +737,12 @@ function HostApps({ host }: { host: Host }) {
   );
 }
 
-type TabId = "pcs" | "pair" | "apps" | "advanced";
+type TabId = "pcs" | "apps" | "advanced" | "pair";
 const TABS: { id: TabId; label: string }[] = [
   { id: "pcs", label: "PCs" },
-  { id: "pair", label: "Pair" },
   { id: "apps", label: "Apps" },
   { id: "advanced", label: "Advanced" },
+  { id: "pair", label: "Pair" },
 ];
 
 function Content() {
@@ -737,7 +795,8 @@ function Content() {
     // The focused control may belong to the old tab and disappear, which sends
     // focus to the header's back button; move it to the new tab's button instead.
     setTimeout(() => {
-      const btn = tabBar.current?.querySelectorAll<HTMLElement>("[data-spout-tab]")[n];
+      const btn =
+        tabBar.current?.querySelectorAll<HTMLElement>("[data-spout-tab]")[n];
       btn?.focus();
     }, 0);
   };
@@ -748,7 +807,10 @@ function Content() {
 
   return (
     <Focusable onButtonDown={onButtonDown}>
-      <Focusable ref={tabBar} style={{ display: "flex", gap: "6px", padding: "0 16px 8px" }}>
+      <Focusable
+        ref={tabBar}
+        style={{ display: "flex", gap: "6px", padding: "0 16px 8px" }}
+      >
         {TABS.map((t) => (
           <DialogButton
             key={t.id}
