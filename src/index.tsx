@@ -809,7 +809,7 @@ function Content() {
     <Focusable onButtonDown={onButtonDown}>
       <Focusable
         ref={tabBar}
-        style={{ display: "flex", gap: "6px", padding: "0 16px 8px" }}
+        style={{ display: "flex", gap: "4px", padding: "0 8px 8px" }}
       >
         {TABS.map((t) => (
           <DialogButton
@@ -820,7 +820,11 @@ function Content() {
             style={{
               flex: 1,
               minWidth: 0,
-              padding: "8px 4px",
+              padding: "8px 2px",
+              fontSize: "12px",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
               opacity: tab === t.id ? 1 : 0.55,
               background: tab === t.id ? "rgba(255,255,255,0.2)" : undefined,
             }}
