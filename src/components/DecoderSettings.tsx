@@ -1,8 +1,10 @@
 import { DropdownItem, PanelSectionRow, ToggleField } from "@decky/ui";
 import { useEffect, useState } from "react";
 import type { DecoderState, Decoders } from "../types";
-import { getDecoders, setDecoders } from "../lib/remotePlay";
-import { getDisplaySize } from "../lib/backend";
+import { callable } from "@decky/api";
+import { getDecoders, setDecoders } from "../lib/steamSettings";
+
+const getDisplaySize = callable<[], [number, number] | null>("get_display_size");
 
 const FPS_LIMITS = [0, 30, 40, 45, 60, 72, 90, 120, 144];
 

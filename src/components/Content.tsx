@@ -9,8 +9,9 @@ import {
 } from "@decky/ui";
 import { useEffect, useRef, useState } from "react";
 import type { Host } from "../types";
-import { getHosts, addHost, removeHost } from "../lib/backend";
-import { HostRow, HostAdvanced } from "./HostControls";
+import { getHosts, addHost, removeHost } from "../lib/hosts";
+import { HostRow } from "./HostRow";
+import { HostAdvanced } from "./HostAdvanced";
 import { PairPC } from "./PairPC";
 import { HostApps } from "./HostApps";
 import { DecoderSettings } from "./DecoderSettings";

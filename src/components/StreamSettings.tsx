@@ -5,8 +5,17 @@ import {
   TextField,
 } from "@decky/ui";
 import { useEffect, useState } from "react";
-import type { Host, HostSettings } from "../types";
-import { getHostSettings, setHostSettings } from "../lib/backend";
+import { callable } from "@decky/api";
+import type { Host, HostSettings, Result } from "../types";
+
+const getHostSettings = callable<
+  [hostId: string],
+  Result<{ settings: HostSettings; os?: string }>
+>("get_host_settings");
+const setHostSettings = callable<
+  [hostId: string, settings: HostSettings],
+  Result<{ settings: HostSettings }>
+>("set_host_settings");
 
 const RESOLUTIONS = [
   "1280x720",

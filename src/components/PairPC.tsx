@@ -2,7 +2,7 @@ import { ButtonItem, PanelSectionRow, TextField } from "@decky/ui";
 import { toaster } from "@decky/api";
 import { useEffect, useState } from "react";
 import type { Found } from "../types";
-import { pollPairing, scanHosts, startPairing, cancelPairing } from "../lib/backend";
+import { pollPairing, scanHosts, startPairing, cancelPairing } from "../lib/pairing";
 
 export function PairPC({
   onPaired,

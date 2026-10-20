@@ -16,6 +16,8 @@ export interface HostSettings {
 
 export type HostState = "ready" | "on" | "off";
 
+export type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
+
 export type Found = { address: string; name: string; paired: boolean };
 
 export interface HostApp {

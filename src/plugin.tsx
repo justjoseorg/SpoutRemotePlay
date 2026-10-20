@@ -1,7 +1,7 @@
 import { staticClasses } from "@decky/ui";
 import { Content } from "./components/Content";
 import { SpoutIcon } from "./components/SpoutIcon";
-import { watchRemotePlay } from "./lib/remotePlay";
+import { watchRemotePlay } from "./lib/remotePlaySession";
 
 export function createPlugin() {
   const stopWatching = watchRemotePlay();

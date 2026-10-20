@@ -1,7 +1,12 @@
 import { ButtonItem, PanelSection, PanelSectionRow } from "@decky/ui";
 import { useEffect, useState } from "react";
 import type { Host, HostApp } from "../types";
-import { listHostApps } from "../lib/backend";
+import { callable } from "@decky/api";
+
+const listHostApps = callable<
+  [host_id: string],
+  { ok: boolean; error?: string; apps?: HostApp[]; steam?: { ready: boolean } }
+>("list_host_apps");
 
 export function HostApps({ host }: { host: Host }) {
   const [apps, setApps] = useState<HostApp[] | null>(null);

@@ -5,7 +5,11 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript";
 
 const source = ts.transpileModule(
-  readFileSync(new URL("../src/lib/remotePlay.ts", import.meta.url), "utf8"),
+  readFileSync(new URL("../src/lib/steamSettings.ts", import.meta.url), "utf8"),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } },
+).outputText;
+const sessionSource = ts.transpileModule(
+  readFileSync(new URL("../src/lib/remotePlaySession.ts", import.meta.url), "utf8"),
   { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } },
 ).outputText;
 
@@ -69,7 +73,7 @@ function setup({ config = {}, synchronous = false, available = true, registerErr
     },
   };
   const exports = {};
-  runInNewContext(source, {
+  const context = {
     exports,
     require(name) {
       if (name === "@decky/api")
@@ -82,7 +86,9 @@ function setup({ config = {}, synchronous = false, available = true, registerErr
     Uint8Array,
     setTimeout(callback) { const id = ++nextTimer; timers.set(id, callback); return id; },
     clearTimeout(id) { timers.delete(id); },
-  });
+  };
+  runInNewContext(source, context);
+  runInNewContext(sessionSource, context);
   return {
     ...exports,
     settings,
