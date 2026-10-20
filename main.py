@@ -14,7 +14,6 @@ import uuid
 
 import decky
 
-import steamcfg
 from wol import is_port_open, normalize_mac, probe_state, send_magic_packet
 
 HOST_API_PORT = 47995
@@ -171,21 +170,8 @@ class Plugin:
         except ValueError as e:
             return {"ok": False, "error": str(e)}
 
-    async def get_decoders(self) -> dict:
-        try:
-            st = await steamcfg.read_state()
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
-        st.pop("_config")
-        return {"ok": True, **st, "display": self._display_size()}
-
-    async def set_decoders(self, values: dict, enabled: bool) -> dict:
-        try:
-            st = await steamcfg.apply(values, enabled)
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
-        st.pop("_config")
-        return {"ok": True, **st, "display": self._display_size()}
+    async def get_display_size(self) -> tuple[int, int] | None:
+        return self._display_size()
 
     def _post_json(self, address: str, path: str, body: dict) -> dict:
         req = urllib.request.Request(
@@ -238,14 +224,8 @@ class Plugin:
             f["paired"] = f["address"] in paired
         return {"ok": True, "hosts": sorted(found, key=lambda f: f["address"])}
 
-    async def _capabilities(self) -> dict:
-        caps: dict = {"hevc": False, "av1": False}
-        try:
-            st = await steamcfg.read_state()
-            caps["hevc"] = bool(st.get("hevc_available"))
-            caps["av1"] = bool(st.get("av1_available"))
-        except Exception as e:
-            decky.logger.info(f"capabilities: Steam not reachable ({e})")
+    def _capabilities(self, decoders: dict) -> dict:
+        caps: dict = {"hevc": decoders.get("hevc") is True, "av1": decoders.get("av1") is True}
         size = self._display_size()
         if size:
             caps["width"], caps["height"] = size
@@ -266,7 +246,7 @@ class Plugin:
             pass
         return None
 
-    async def start_pairing(self, address: str) -> dict:
+    async def start_pairing(self, address: str, capabilities: dict | None = None) -> dict:
         """Ask the PC to pair. The PIN is shown here and typed into the host UI on the PC."""
         address = (address or "").strip()
         if not address:
@@ -278,7 +258,7 @@ class Plugin:
             "salt": salt,
             "pinHash": hashlib.sha256((salt + pin).encode()).hexdigest(),
             "secretHash": hashlib.sha256(secret.encode()).hexdigest(),
-            "caps": await self._capabilities(),
+            "caps": self._capabilities(capabilities or {}),
         }
         try:
             res = await asyncio.to_thread(self._post_json, address, "/api/pair/request", body)
