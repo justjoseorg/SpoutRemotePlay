@@ -2,6 +2,14 @@
 
 Minor releases (`X.Y.0`) get a written entry here, which becomes their release notes. Patch releases (`X.Y.Z`) are listed on the [Releases](https://github.com/justjoseorg/SpoutRemotePlay/releases) page with the change that produced them. Each entry covers everything since the previous minor release.
 
+## Unreleased
+
+- Split the frontend into feature components, backend calls, and Steam Remote Play integration without changing the existing UI markup.
+- Replace the Python CEF debugger bridge with direct Steam settings access and Steam's protobuf implementation.
+- Serialize client settings updates and wait for Steam to confirm saved values.
+- Move the Pair tab last, fit all four tabs in the tab bar, and show Wake immediately until the PC is detected online.
+- Add automated coverage for settings access, subscription cleanup, and pairing capabilities. The refactored plugin has not yet been run on a handheld.
+
 ## 0.5
 
 - **Shut down a PC from the plugin:** when a PC is ready, a **Shut down** button (with a confirmation) asks its host to shut it down. Needs Spout Remote Play Host 0.7 or later. Windows does a full shutdown, so Wake can turn it back on.
