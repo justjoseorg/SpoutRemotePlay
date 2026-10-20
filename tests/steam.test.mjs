@@ -66,7 +66,8 @@ function setup({ config = {}, synchronous = false, available = true, registerErr
       if (delayedWrites) changes.push(update);
       else update();
     },
-    SetStreamingClientConfigEnabled(enabled) {
+    SetStreamingClientConfigEnabled(enabled, session) {
+      assert.equal(session, settings.unStreamingSessionID);
       const update = () => { settings.bRemotePlayClientConfigEnabled = enabled; };
       if (delayedWrites) changes.push(update);
       else update();

@@ -180,7 +180,10 @@ async function applyDecoders(values: Partial<Decoders>, enabled: boolean) {
     getConfigType().fromObject(config).serializeBase64String(),
     session,
   );
-  SteamClient.RemotePlay.SetStreamingClientConfigEnabled(enabled);
+  // Decky's declaration omits the session ID required by the native Steam API.
+  const setConfigEnabled: (enabled: boolean, session: number) => void =
+    SteamClient.RemotePlay.SetStreamingClientConfigEnabled.bind(SteamClient.RemotePlay);
+  setConfigEnabled(enabled, session);
   return decodeSettings(
     await readSettings((settings) => {
       const state = decodeSettings(settings);
