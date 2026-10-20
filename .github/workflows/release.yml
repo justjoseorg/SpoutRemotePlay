@@ -1,6 +1,12 @@
 name: Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: "Release notes for a manual patch release"
+        required: true
+        type: string
   pull_request:
     types: [closed]
     branches: [main]
@@ -8,15 +14,24 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: plugin-release
+  cancel-in-progress: false
+
 jobs:
   release:
-    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.labels.*.name, 'no-release')
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       !contains(github.event.pull_request.labels.*.name, 'no-release'))
     runs-on: ubuntu-latest
+    env:
+      RELEASE_SHA: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ env.RELEASE_SHA }}
 
       - name: Compute next version
         id: ver
@@ -29,8 +44,10 @@ jobs:
 
       - name: Release notes
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: bash .github/scripts/release-notes.sh "${{ steps.ver.outputs.version }}" "$PR_TITLE" "${{ github.event.pull_request.number }}" > "$RUNNER_TEMP/notes.md"
+          RELEASE_NOTES: ${{ inputs.notes || github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: bash .github/scripts/release-notes.sh "$VERSION" "$RELEASE_NOTES" "$PR_NUMBER" > "$RUNNER_TEMP/notes.md"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -62,6 +79,6 @@ jobs:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           gh release create "v${VERSION}" "SpoutRemotePlay-v${VERSION}.zip" \
-            --target "${{ github.event.pull_request.merge_commit_sha }}" \
+            --target "$RELEASE_SHA" \
             --title "v${VERSION}" \
             --notes-file "$RUNNER_TEMP/notes.md"

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Prints the release notes for VERSION (MAJOR.MINOR.PATCH).
 # Minor releases (PATCH = 0) use their hand-written "## MAJOR.MINOR" section of CHANGELOG.md
-# and fail if it is missing. Patch releases use the title and number of the merged PR.
-# Usage: release-notes.sh VERSION [PR_TITLE PR_NUMBER]
+# and fail if it is missing. Patch releases use manual notes or the merged PR title and number.
+# Usage: release-notes.sh VERSION [NOTES PR_NUMBER]
 set -euo pipefail
 version=$1
 minor=${version%.*}
@@ -14,6 +14,11 @@ if [ "$patch" = 0 ]; then
     exit 1
   fi
   printf '%s\n' "$notes"
+elif [ -n "${3:-}" ]; then
+  printf '%s (#%s)\n' "${2:-}" "$3"
+elif [ -n "${2:-}" ]; then
+  printf '%s\n' "$2"
 else
-  printf '%s (#%s)\n' "${2:-}" "${3:-}"
+  echo "Patch releases need release notes or a PR title." >&2
+  exit 1
 fi
