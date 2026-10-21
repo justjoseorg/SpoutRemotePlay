@@ -1,10 +1,13 @@
 import fcntl
+import ipaddress
+import logging
 import re
 import socket
 import struct
 import time
 
 _MAC_RE = re.compile(r"^[0-9a-f]{12}$")
+logger = logging.getLogger(__name__)
 
 
 def normalize_mac(mac: str) -> str:
@@ -19,52 +22,78 @@ def build_magic_packet(mac: str) -> bytes:
     return b"\xff" * 6 + raw * 16
 
 
-def local_broadcasts() -> list:
-    """Broadcast addresses of this device's network interfaces, e.g. 192.168.1.255.
+def directed_broadcast(address: str, subnet_mask: str) -> str:
+    ip = ipaddress.IPv4Address(address)
+    mask = ipaddress.IPv4Address(subnet_mask)
+    network = ipaddress.IPv4Network(f"{ip}/{mask}", strict=False)
+    if str(network.netmask) != str(mask) or not 0 < network.prefixlen < 31:
+        raise ValueError("The host subnet mask must describe a broadcast-capable IPv4 subnet")
+    if ip.is_unspecified or ip.is_loopback or ip.is_multicast or ip in (network.network_address, network.broadcast_address):
+        raise ValueError("The host must report a usable LAN IPv4 address")
+    return str(network.broadcast_address)
 
-    255.255.255.255 follows the default route, so with a full-tunnel VPN such as
-    WireGuard it goes into the tunnel and never reaches the LAN. A subnet's own
-    broadcast address always leaves through that subnet's interface.
-    """
-    SIOCGIFFLAGS, SIOCGIFBRDADDR, IFF_BROADCAST, IFF_UP = 0x8913, 0x8919, 0x2, 0x1
+
+def wake_destination(host: dict) -> str:
+    broadcast = host["broadcast"]
+    if broadcast != "255.255.255.255" or not host.get("subnet_mask"):
+        return broadcast
+    return directed_broadcast(host["lan_address"], host["subnet_mask"])
+
+
+def wake_interfaces() -> list[tuple[str, str | None]]:
+    """Active non-loopback interfaces and their optional IPv4 broadcast addresses."""
+    SIOCGIFFLAGS, SIOCGIFBRDADDR = 0x8913, 0x8919
+    IFF_UP, IFF_BROADCAST, IFF_LOOPBACK = 0x1, 0x2, 0x8
     out = []
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         for _, name in socket.if_nameindex():
             req = struct.pack("256s", name.encode()[:15])
             try:
                 flags = struct.unpack("H", fcntl.ioctl(sock.fileno(), SIOCGIFFLAGS, req)[16:18])[0]
-                if flags & (IFF_BROADCAST | IFF_UP) != IFF_BROADCAST | IFF_UP:
-                    continue
-                addr = socket.inet_ntoa(fcntl.ioctl(sock.fileno(), SIOCGIFBRDADDR, req)[20:24])
-            except OSError:
+            except OSError as e:
+                logger.warning("Cannot inspect wake interface %s: %s", name, e)
                 continue
-            if addr != "0.0.0.0" and addr not in out:
-                out.append(addr)
+            if not flags & IFF_UP or flags & IFF_LOOPBACK:
+                continue
+            broadcast = None
+            if flags & IFF_BROADCAST:
+                try:
+                    addr = socket.inet_ntoa(fcntl.ioctl(sock.fileno(), SIOCGIFBRDADDR, req)[20:24])
+                    if addr != "0.0.0.0":
+                        broadcast = addr
+                except OSError as e:
+                    logger.warning("Cannot read broadcast address for %s: %s", name, e)
+            out.append((name, broadcast))
     return out
 
 
 def send_magic_packet(mac: str, broadcast: str = "255.255.255.255", port: int = 9) -> None:
-    """Send to the configured broadcast address and to every local subnet's broadcast address."""
+    """Send to the configured destination and local broadcast through each interface."""
     packet = build_magic_packet(mac)
-    try:
-        extra = local_broadcasts()
-    except OSError:
-        extra = []
-    targets = [broadcast] + [b for b in extra if b != broadcast]
-    # Port 7 is also commonly listened on, so send there too.
     ports = (port,) if port == 7 else (port, 7)
     sent, error = 0, None
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        for target in targets:
-            for p in ports:
-                try:
-                    sock.sendto(packet, (target, p))
-                    sent += 1
-                except OSError as e:
-                    error = e
-    if not sent and error:
-        raise error
+    for name, local_broadcast in wake_interfaces():
+        targets = [broadcast]
+        if local_broadcast and local_broadcast != broadcast:
+            targets.append(local_broadcast)
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                # Binding prevents an overlapping Wi-Fi subnet from stealing VPN traffic.
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, name.encode() + b"\0")
+                for target in targets:
+                    for p in ports:
+                        try:
+                            sock.sendto(packet, (target, p))
+                            sent += 1
+                        except OSError as e:
+                            error = e
+                            logger.warning("Wake via %s to %s:%s failed: %s", name, target, p, e)
+        except OSError as e:
+            error = e
+            logger.warning("Cannot send wake through %s: %s", name, e)
+    if not sent:
+        raise error or OSError("No active network interface could send a wake packet")
 
 
 def is_port_open(host: str, port: int, timeout: float = 1.0) -> bool:

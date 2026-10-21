@@ -4,6 +4,8 @@ export interface Host {
   mac: string;
   address: string;
   broadcast: string;
+  lan_address?: string;
+  subnet_mask?: string;
   token?: string;
 }
 

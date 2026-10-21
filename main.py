@@ -14,7 +14,7 @@ import uuid
 
 import decky
 
-from wol import is_port_open, normalize_mac, probe_state, send_magic_packet
+from wol import directed_broadcast, is_port_open, normalize_mac, probe_state, send_magic_packet, wake_destination
 
 HOST_API_PORT = 47995
 # Steam (27036) and Spout Host only listen once someone is signed in; RDP and SMB answer at the sign-in screen too.
@@ -74,9 +74,10 @@ class Plugin:
             return {"ok": False, "error": "This PC's MAC address is unknown; add it manually"}
         error = None
         try:
-            await asyncio.to_thread(send_magic_packet, host["mac"], host["broadcast"])
-            decky.logger.info(f"Sent magic packet to {host['name']} ({host['mac']})")
-        except OSError as e:
+            destination = wake_destination(host)
+            await asyncio.to_thread(send_magic_packet, host["mac"], destination)
+            decky.logger.info(f"Sent magic packet to {host['name']} ({host['mac']}) via {destination}")
+        except (OSError, ValueError, KeyError) as e:
             decky.logger.error(f"WoL send failed: {e}")
             error = str(e)
         relays = await asyncio.to_thread(self._relay_wake, host)
@@ -295,6 +296,15 @@ class Plugin:
             "name": res.get("hostname") or p["address"], "mac": mac,
             "address": p["address"], "token": res["token"],
         })
+        host.pop("lan_address", None)
+        host.pop("subnet_mask", None)
+        if "subnetMask" in res:
+            try:
+                directed_broadcast(res["address"], res["subnetMask"])
+            except (ValueError, TypeError, KeyError) as e:
+                decky.logger.warning(f"Ignoring invalid subnet information from paired host: {e}")
+            else:
+                host.update({"lan_address": res["address"], "subnet_mask": res["subnetMask"]})
         self._save(hosts)
         return {"ok": True, "status": "approved", "host": host}
 
